@@ -13,11 +13,11 @@ import swal from 'sweetalert2';
 })
 export class RegistrarClienteComponent implements OnInit {
 
-  nombrePattern = "^[a-zA-Z ]{2,20}$"; 
-  apellidoPattern = "^[a-zA-Z ]{2,30}$"; 
-  docPattern = "^[0-9]{1}[0-9]{7}$"; 
-  celularPattern = "^[1-9]{1}[0-9]{6,8}$"; 
-  correoPattern = "^[a-z]+[a-z0-9._]+@[a-z]+\.[a-z.]{2,5}$"; 
+  nombrePattern = "^[a-zA-Z ]{2,20}$";
+  apellidoPattern = "^[a-zA-Z ]{2,30}$";
+  docPattern = "^[0-9]{1}[0-9]{7}$";
+  celularPattern = "^[1-9]{1}[0-9]{6,8}$";
+  correoPattern = "^[a-z]+[a-z0-9._]+@[a-z]+\.[a-z.]{2,5}$";
 
   constructor(public service: ClienteService) { }
 
@@ -35,32 +35,29 @@ export class RegistrarClienteComponent implements OnInit {
     };
     console.log(data);
     this.service.addCliente(data).subscribe(
-      (res) => { 
-      this.clear(ClienteForm);
-      swal.fire({
-        text: 'Registro exitoso',
-        icon: 'success',
-        showCancelButton: false,
-        customClass: {
-            confirmButton: 'btn btn-success',
-        },
-        buttonsStyling: false
-    });
-    },
-      (err) => {console.error(err)
+      (res) => {
+        this.clear(ClienteForm);
         swal.fire({
-          text: 'Ocurrió un error, volver a intentar.',
-          icon: 'warning',
+          text: 'Registro exitoso',
+          icon: 'success',
           showCancelButton: false,
           customClass: {
-              confirmButton: 'btn btn-warning',
+            confirmButton: 'btn btn-success',
           },
           buttonsStyling: false
-      });
+        });
+      },
+      (err) => {
+        const msg = err?.error?.message || 'Ocurrió un error, volver a intentar.';
+        swal.fire({
+          text: msg, icon: 'warning', showCancelButton: false,
+          customClass: { confirmButton: 'btn btn-warning' }, buttonsStyling: false
+        });
       }
+
     );
   }
-  clear(ClienteForm: NgForm){
+  clear(ClienteForm: NgForm) {
     ClienteForm.reset();
- }
+  }
 }

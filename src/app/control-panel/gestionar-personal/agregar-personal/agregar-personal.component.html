@@ -12,7 +12,8 @@
                 <mat-card-content class="card-body">
                     <div class="form-group">
                         <label class='col-form-label'>Nombres</label>
-                        <input type="text" class="form-control" name="nombre" #nombre="ngModel" [(ngModel)]="service.selectPersonal.nombre" [pattern]="nombresPattern" required>
+                        <input type="text" class="form-control" name="nombre" #nombre="ngModel"
+                            [(ngModel)]="service.selectPersonal.nombre" [pattern]="nombresPattern" required>
                         <div *ngIf="nombre.errors?.pattern">
                             <p>*Sólo letras</p>
                         </div>
@@ -23,7 +24,8 @@
 
                     <div class="form-group">
                         <label class='col-form-label'>Apellidos</label>
-                        <input type="text" class="form-control" name="apellido" #apellido="ngModel" [(ngModel)]="service.selectPersonal.apellido" [pattern]="apellidoPattern" required>
+                        <input type="text" class="form-control" name="apellido" #apellido="ngModel"
+                            [(ngModel)]="service.selectPersonal.apellido" [pattern]="apellidoPattern" required>
                         <div *ngIf="apellido.errors?.pattern">
                             <p>*Sólo letras</p>
                         </div>
@@ -34,7 +36,8 @@
 
                     <div class="form-group">
                         <label class='col-form-label'>N° documento de identidad</label>
-                        <input type="text" class="form-control" name="doc" #doc="ngModel" [(ngModel)]="service.selectPersonal.doc" [pattern]="docPattern" required>
+                        <input type="text" class="form-control" name="doc" #doc="ngModel"
+                            [(ngModel)]="service.selectPersonal.doc" [pattern]="docPattern" required>
                         <div *ngIf="doc.errors?.pattern">
                             <p>*Sólo números</p>
                         </div>
@@ -45,7 +48,8 @@
 
                     <div class="form-group">
                         <label class='col-form-label'>Celular</label>
-                        <input type="text" class="form-control" name="celular" #celular="ngModel" [(ngModel)]="service.selectPersonal.celular" [pattern]="celularPattern" required>
+                        <input type="text" class="form-control" name="celular" #celular="ngModel"
+                            [(ngModel)]="service.selectPersonal.celular" [pattern]="celularPattern" required>
                         <div *ngIf="celular.errors?.pattern">
                             <p>*Sólo números</p>
                         </div>
@@ -55,7 +59,8 @@
                     </div>
                     <div class="form-group">
                         <label class='col-form-label'>Email</label>
-                        <input type="text" class="form-control" name="correo" #correo="ngModel" [(ngModel)]="service.selectPersonal.correo" [pattern]="correoPattern" required>
+                        <input type="text" class="form-control" name="correo" #correo="ngModel"
+                            [(ngModel)]="service.selectPersonal.correo" [pattern]="correoPattern" required>
 
                         <div *ngIf="correo.errors?.pattern">
                             <p>*Ingrese un email correcto</p>
@@ -67,7 +72,8 @@
 
                     <div class="form-group">
                         <label class='col-form-label'>Dirección</label>
-                        <input type="text" class="form-control" name="direccion" #direccion="ngModel" [(ngModel)]="service.selectPersonal.direccion" required>
+                        <input type="text" class="form-control" name="direccion" #direccion="ngModel"
+                            [(ngModel)]="service.selectPersonal.direccion" required>
 
                         <div *ngIf="direccion.errors?.pattern">
                             <p>*Ingrese una dirección correcta</p>
@@ -86,17 +92,19 @@
                 <mat-card-content class="card-body">
                     <div class="form-group">
                         <label class='col-form-label'>Autonomo</label>
-                        <select mat-select name="autonomo" [ngModel]="service.selectPersonal.autonomo" class="form-control" id="input-select">
-                  <option matInput  value="0">Si</option>
-                  <option matInput  value="1">No</option>
-                </select>
+                        <select mat-select name="autonomo" [ngModel]="service.selectPersonal.autonomo"
+                            class="form-control" id="input-select">
+                            <option matInput value="0">Si</option>
+                            <option matInput value="1">No</option>
+                        </select>
                     </div>
 
                     <div class="form-group">
                         <label class='col-form-label'>Cargo</label>
-                        <select type="text" class="form-control form-control-sm" name="cargo" #cargo="ngModel" [ngModel]="service.selectPersonal.cargo" requiered>
-                <option *ngFor="let c of cargos" [value]="c.ID">{{c.Nombre}}</option>
-                </select>
+                        <select type="text" class="form-control form-control-sm" name="cargo" #cargo="ngModel"
+                            [ngModel]="service.selectPersonal.cargo" requiered>
+                            <option *ngFor="let c of cargos" [value]="c.idCargo">{{c.cargoNombre}}</option>
+                        </select>
                     </div>
 
                 </mat-card-content>
@@ -104,10 +112,12 @@
 
             <div class="row" style="text-align: center;">
                 <div class="col-6" style="text-align: right;">
-                    <button type="submit" class="btn btn-outline-dark" [disabled]="EmpleadoForm.invalid">Registrar</button>
+                    <button type="submit" class="btn btn-outline-dark"
+                        [disabled]="EmpleadoForm.invalid">Registrar</button>
                 </div>
                 <div class="col-6" style="text-align: left;">
-                    <button type="button" class="btn btn-outline-dark" [routerLink]="['/home/gestionar-personal']" (click)="clear(EmpleadoForm)">Atrás</button>
+                    <button type="button" class="btn btn-outline-dark" [routerLink]="['/home/gestionar-personal']"
+                        (click)="clear(EmpleadoForm)">Atrás</button>
                 </div>
             </div>
 

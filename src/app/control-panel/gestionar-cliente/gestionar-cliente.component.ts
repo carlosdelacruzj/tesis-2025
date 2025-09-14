@@ -16,16 +16,16 @@ export class GestionarClienteComponent implements OnInit {
 
   clientes: Cliente[]
   displayedColumns2 = [
-    'id',
+    'codigoCliente',
     'nombre',
     'apellido',
     'correo',
     'celular',
-    'numDoc',
+    'doc',
     'direccion',
     'actions',
   ];
-  id2 =0;
+  id2 = 0;
   dataSource!: MatTableDataSource<any>;
   dataSource2!: MatTableDataSource<any>;
 
@@ -36,14 +36,14 @@ export class GestionarClienteComponent implements OnInit {
   constructor(
     public service: ClienteService,
     private modalService: NgbModal
-  ) {}
+  ) { }
   fechaActual = '';
-  async ngOnInit(){
+  async ngOnInit() {
     await this.getAllClientes();
   }
- 
+  trackById(index: number, row: any) { return row.idCliente; }
 
-  async getAllClientes(){
+  async getAllClientes() {
     var data = await this.service.getAllClientes();
     this.dataSource2 = new MatTableDataSource(data);
     this.dataSource2.paginator = this.paginator;
@@ -69,7 +69,7 @@ export class GestionarClienteComponent implements OnInit {
     }
   }
 
-  public getByIdCliente(id : number){
+  public getByIdCliente(id: number) {
     this.service.getByIdCliente(id).subscribe((responde) => {
       this.service.selectCliente = responde[0];
       console.log(this.service.selectCliente);

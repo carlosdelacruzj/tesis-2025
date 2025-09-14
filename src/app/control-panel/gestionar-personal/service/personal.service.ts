@@ -2,6 +2,7 @@ import { Injectable, OnChanges } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Personal, PersonalActualizar, PersonalListar } from '../model/personal.model';
+import { environment } from 'src/environments/environment';
 
 @Injectable({
   providedIn: 'root',
@@ -31,26 +32,26 @@ export class PersonalService {
       Direccion:''
     
 };
-  private  URL_API = 'https://tp2021database.herokuapp.com/empleado/';
+  private  URL_API = `${environment.baseUrl}`;
 
  
   constructor(private http: HttpClient) {}
 
   public createEmpleado(data:any): Observable<any> {
-    return this.http.post(this.URL_API+'registro/postEmpleado',data);
+    return this.http.post(this.URL_API+'/empleados',data);
   }
 
   public getEmpleados(): Observable<any> {
-    return this.http.get(this.URL_API+'consulta/getAllEmpleadosList');
+    return this.http.get(this.URL_API+'/empleados');
   }
 
   public getEmpleadoID(id: any): Observable<any> {
     
-    return this.http.get(this.URL_API+'consulta/getEmpleadoByID/'+ `${id}`);
+    return this.http.get(this.URL_API+'/empleados/'+ `${id}`);
     
   }
   public getCargos(): Observable<any> {
-    return this.http.get(this.URL_API+'consulta/getAllCargo');
+    return this.http.get(this.URL_API+'/empleados/cargos');
   }
   public updateEmpleado(Personal:PersonalActualizar) {
     

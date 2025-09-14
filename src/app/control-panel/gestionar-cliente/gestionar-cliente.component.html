@@ -3,24 +3,26 @@
         <h1 class="mb-4">Clientes</h1>
         <div class="row">
             <div class="col-6 input-group mb-4 ml-3 p-0 rounded bg-white border border-gray">
-                <input matInput type="search" placeholder="Buscar" class="form-control bg-transparent pl-2 border-0 shadow-none">
+                <input matInput type="search" placeholder="Buscar"
+                    class="form-control bg-transparent pl-2 border-0 shadow-none">
                 <button class="bg-transparent border-0 fa fa-search"></button>
             </div>
         </div>
 
         <div class="row">
             <div class="col-12">
-                <button class="button-margin" mat-raised-button color="primary" [routerLink]="['/home/gestionar-cliente/registrar-cliente']">Registrar Cliente</button>
+                <button class="button-margin" mat-raised-button color="primary"
+                    [routerLink]="['/home/gestionar-cliente/registrar-cliente']">Registrar Cliente</button>
             </div>
         </div>
         <div class="shadow">
             <div class="table-responsive">
                 <table mat-table [dataSource]="dataSource2" matSort class="table">
-                    <ng-container matColumnDef="id">
+                    <ng-container matColumnDef="codigoCliente">
                         <div class="text-center">
                             <th mat-header-cell *matHeaderCellDef mat-sort-header>ID</th>
                         </div>
-                        <td mat-cell *matCellDef="let element"> {{element.id}} </td>
+                        <td mat-cell *matCellDef="let element"> {{element.codigoCliente}} </td>
                     </ng-container>
                     <ng-container matColumnDef="nombre">
                         <th mat-header-cell *matHeaderCellDef mat-sort-header>Nombre</th>
@@ -38,9 +40,9 @@
                         <th mat-header-cell *matHeaderCellDef mat-sort-header>Celular</th>
                         <td mat-cell *matCellDef="let element">{{element.celular}}</td>
                     </ng-container>
-                    <ng-container matColumnDef="numDoc">
+                    <ng-container matColumnDef="doc">
                         <th mat-header-cell *matHeaderCellDef mat-sort-header>Número de documento</th>
-                        <td mat-cell *matCellDef="let element">{{element.numDoc}}</td>
+                        <td mat-cell *matCellDef="let element">{{element.doc}}</td>
                     </ng-container>
                     <ng-container matColumnDef="direccion">
                         <th mat-header-cell *matHeaderCellDef mat-sort-header>Direccion</th>
@@ -49,7 +51,8 @@
                     <ng-container matColumnDef="actions">
                         <th mat-header-cell *matHeaderCellDef mat-sort-header> Acciones </th>
                         <td mat-cell *matCellDef="let element">
-                            <button mat-raised-button color="primary" (click)="getByIdCliente(element.id)" [routerLink]="['/home/gestionar-cliente/editar-cliente']">
+                            <button mat-raised-button color="primary" (click)="getByIdCliente(element.idCliente)" [routerLink]="['/home/gestionar-cliente/editar-cliente']">
+
                                 <span class="fas fa-edit"></span>
                             </button>
                         </td>
