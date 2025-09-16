@@ -66,6 +66,8 @@ export class ListarportipoComponent implements OnInit {
     this.service
       .getEquipoMarcaModelo(this.idEquipo, this.idMarca, this.idModelo)
       .subscribe((response: any) => {
+       console.log(response);
+        
         this.dataSource1 = new MatTableDataSource(response);
         this.dataSource1.paginator = this.paginator1;
         this.dataSource1.sort = this.matSort1;

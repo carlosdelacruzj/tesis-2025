@@ -1,60 +1,64 @@
-import { Injectable, OnChanges } from '@angular/core';
+// src/app/gestionar-personal/service/personal.service.ts
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { Personal, PersonalActualizar, PersonalListar } from '../model/personal.model';
+import { map, Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
+import { Empleado, EmpleadoUpdateDto } from '../model/personal.model';
 
-@Injectable({
-  providedIn: 'root',
-})
+// ❗ Opcionales: déjalos si usas esos endpoints; si no, elimínalos.
+export interface Cargo {
+  idCargo: number;
+  cargo: string;
+}
+export type EmpleadoDisponible = Pick<
+  Empleado,
+  'idEmpleado' | 'codigoEmpleado' | 'nombre' | 'apellido' | 'idCargo' | 'cargo'
+>;
+export interface EmpleadoOption {
+  idEmpleado: number;
+  label: string; // si tu API usa otro nombre (p.ej. 'texto'), ajusta aquí
+}
+
+@Injectable({ providedIn: 'root' })
 export class PersonalService {
-  selectPersonal: Personal = {
-        nombre: '',
-        apellido: '',
-        correo : '',
-        celular : '',
-        doc : '',
-        direccion : '',
-        autonomo: 0,
-        cargo: 0,
-        estado:0
-  };
-  selectListar: PersonalListar = {
-      ID:0,
-      Nombres: '',
-      Apellidos: '',
-      DNI : '',
-      Celular : '',
-      Correo : '',
-      Autonomo : 0,
-      Cargo: '',
-      Estado :'',
-      Direccion:''
-    
-};
-  private  URL_API = `${environment.baseUrl}`;
+  private readonly base = `${environment.baseUrl}/empleados`;
 
- 
   constructor(private http: HttpClient) {}
 
-  public createEmpleado(data:any): Observable<any> {
-    return this.http.post(this.URL_API+'/empleados',data);
+  // POST /empleados
+  createEmpleado(data: Partial<Empleado>): Observable<Empleado> {
+    return this.http.post<Empleado>(this.base, data);
   }
 
-  public getEmpleados(): Observable<any> {
-    return this.http.get(this.URL_API+'/empleados');
+  // GET /empleados
+  getEmpleados(): Observable<Empleado[]> {
+    return this.http.get<Empleado[]>(this.base);
   }
 
-  public getEmpleadoID(id: any): Observable<any> {
-    
-    return this.http.get(this.URL_API+'/empleados/'+ `${id}`);
-    
+  // GET /empleados/{id}
+  getEmpleadoById(id: number): Observable<Empleado> {
+    return this.http.get<Empleado | Empleado[]>(`${this.base}/${id}`).pipe(
+      map(r => Array.isArray(r) ? r[0] : r) // por si el backend retorna array
+    );
   }
-  public getCargos(): Observable<any> {
-    return this.http.get(this.URL_API+'/empleados/cargos');
+
+  // PUT /empleados/{id}
+  updateEmpleado(dto: EmpleadoUpdateDto): Observable<Empleado> {
+    return this.http.put<Empleado>(`${this.base}/${dto.idEmpleado}`, dto);
   }
-  public updateEmpleado(Personal:PersonalActualizar) {
-    
-    return this.http.put(this.URL_API+'actualiza/putEmpleadoById',Personal);
-  }  
+
+  // GET /empleados/cargos  (opcional)
+  getCargos(): Observable<Cargo[]> {
+    return this.http.get<Cargo[]>(`${this.base}/cargos`);
+  }
+
+  // GET /empleados/disponibles/{idProyecto}  (opcional)
+  getDisponiblesPorProyecto(idProyecto: number): Observable<EmpleadoDisponible[]> {
+    return this.http.get<EmpleadoDisponible[]>(`${this.base}/disponibles/${idProyecto}`);
+  }
+
+  // GET /empleados/lista  (opcional: para selects)
+  getEmpleadosLista(): Observable<EmpleadoOption[]> {
+    return this.http.get<EmpleadoOption[]>(`${this.base}/lista`);
+  }
 }

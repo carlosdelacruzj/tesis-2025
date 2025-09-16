@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Proyecto, DatosCliente, Eventos, Servi } from '../model/pedido.model';
+import { environment } from 'src/environments/environment';
 @Injectable({
   providedIn: 'root'
 })
@@ -55,12 +56,11 @@ export class PedidoService {
 
   private API_DNI =
     'https://tp2021database.herokuapp.com/cliente/consulta/getDataCliente/';
+  private API_CLIENTES = `${environment.baseUrl}/clientes/by-doc`;
 
-  private API_SERVICIOS =
-    'https://tp2021database.herokuapp.com/servicio/consulta/getAllServicios';
+  private API_SERVICIOS =`${environment.baseUrl}/servicios`;
 
-  private API_EVENTOS =
-    'https://tp2021database.herokuapp.com/eventos/consulta/getAllEventos';
+  private API_EVENTOS =`${environment.baseUrl}/eventos`;
 
   // private API_SERVICIOSxEVENTOS =
   //   'https://tp2021database.herokuapp.com/eventos_servicios/consulta/getAllServiciosByEventoServ/';
@@ -71,8 +71,12 @@ export class PedidoService {
   public getAllNombres(): Observable<any> {
     return this.http.get(this.API_PRUEBA);
   }
-  public getDni(id: any): Observable<any> {
-    return this.http.get(this.API_DNI + id)
+  // public getDni(id: any): Observable<any> {
+  //   return this.http.get(this.API_DNI + id)
+  // }
+    // GET /clientes/{id}
+  public getDni(id: number | string): Observable<any> {
+    return this.http.get(`${this.API_CLIENTES}/${id}`);
   }
   public getN_Pedido(): Observable<any> {
     return this.http.get(this.API_N_Pedido);

@@ -43,11 +43,11 @@
                             </div>
                             <div class="form-group">
                                 <label class='col-form-label'>Nombres</label>
-                                <input type="text" class="form-control" name="nombre" [(ngModel)]="infoCliente.Nombre" disabled>
+                                <input type="text" class="form-control" name="nombre" [(ngModel)]="infoCliente.nombre" disabled>
                             </div>
                             <div class="form-group">
                                 <label class='col-form-label'>Apellidos</label>
-                                <input type="text" class="form-control" name="Apellido" [(ngModel)]="infoCliente.Apellido" disabled>
+                                <input type="text" class="form-control" name="Apellido" [(ngModel)]="infoCliente.apellido" disabled>
                             </div>
                         </mat-card-content>
                     </mat-card>
@@ -129,7 +129,7 @@
                             <div class="form-group">
                                 <label class='col-form-label'>Servicio</label>
                                 <select type="text" class="form-control form-control-sm" name="servicio" [(ngModel)]="servicioSeleccionado" (ngModelChange)="asignarServicio($event)" requiered>
-                                    <option *ngFor="let s of servicios" [value]="s.ID">{{s.Nombre}}</option>
+                                    <option *ngFor="let s of servicios" [value]="s.id">{{s.nombre}}</option>
                                 </select>
                             </div>
                         </div>
@@ -148,12 +148,12 @@
 
                             <ng-container matColumnDef="Descripcion">
                                 <th mat-header-cell mat-sort-header *matHeaderCellDef> Descripcion </th>
-                                <td mat-cell *matCellDef="let element"> {{element.Descripcion}} </td>
+                                <td mat-cell *matCellDef="let element"> {{element.descripcion}} </td>
                             </ng-container>
 
                             <ng-container matColumnDef="Precio">
                                 <th mat-header-cell mat-sort-header *matHeaderCellDef> Precio </th>
-                                <td mat-cell *matCellDef="let element"> {{element.Precio}} </td>
+                                <td mat-cell *matCellDef="let element"> {{element.precio}} </td>
                             </ng-container>
 
                             <!-- Boton Visualizar -->

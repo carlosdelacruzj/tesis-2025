@@ -20,6 +20,7 @@ import {
   updateAlquilados,
   updateStatus,
 } from '../models/modeloprueba.model';
+import { environment } from 'src/environments/environment';
 
 @Injectable({
   providedIn: 'root',
@@ -157,6 +158,7 @@ export class AdministrarEquiposService {
     codigo: 0,
   };
 
+  private readonly base = `${environment.baseUrl}/equipo`;
   private EQUIPO_TIPOALL =
     'https://tp2021database.herokuapp.com/equipo/consulta/getAllTipoEquipo';
 
@@ -166,14 +168,16 @@ export class AdministrarEquiposService {
   private EQUIPO_TIPOALLID =
     'https://tp2021database.herokuapp.com/equipo/consulta/getByTipoEquipo/';
 
-  private EQUIPO_TIPOIDMARCAMODELO =
-    'https://tp2021database.herokuapp.com/equipo/consulta/getAllEquiposByIdGroup';
+  // private EQUIPO_TIPOIDMARCAMODELO =
+  //   'https://tp2021database.herokuapp.com/equipo/consulta/getAllEquiposByIdGroup';
+  private EQUIPO_TIPOIDMARCAMODELO = this.base + '/by-grupo';
 
-  private EQUIPO_ALLGROUP =
-    'https://tp2021database.herokuapp.com/equipo/consulta/getAllEquiposGroup';
+  // private EQUIPO_ALLGROUP =
+  //   'https://tp2021database.herokuapp.com/equipo/consulta/getAllEquiposGroup';
 
-  private EQUIPO_ALLMARCA =
-    'https://tp2021database.herokuapp.com/equipo/consulta/getAllMarca';
+  private EQUIPO_ALLGROUP = this.base + '/grupos';
+
+  private EQUIPO_ALLMARCA ='https://tp2021database.herokuapp.com/equipo/consulta/getAllMarca';
 
   private EQUIPO_ALLMODELO =
     'https://tp2021database.herokuapp.com/equipo/consulta/getAllModelo/';
@@ -181,9 +185,10 @@ export class AdministrarEquiposService {
   private REGISTER_EQUIPO =
     'https://tp2021database.herokuapp.com/equipo/registro/postEquipo';
 
-  private COUNT_ESTADOS =
-    'https://tp2021database.herokuapp.com/equipo/consulta/getAllContadoresEquiposEstado';
+  // private COUNT_ESTADOS =
+  //   'https://tp2021database.herokuapp.com/equipo/consulta/getAllContadoresEquiposEstado';
 
+  private COUNT_ESTADOS = this.base + '/contadores';
   private PUT_STATUS =
     'https://tp2021database.herokuapp.com/equipo/actualiza/putEstadoEquipo';
 
@@ -208,7 +213,7 @@ export class AdministrarEquiposService {
   private PUT_ALQUILADO =
     'https://tp2021database.herokuapp.com/equiposAlquilado/actualiza/putEquipoAlquilado';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   public putEAlquilado(data: any): Observable<any> {
     return this.http.put(this.PUT_ALQUILADO, data);
@@ -225,6 +230,7 @@ export class AdministrarEquiposService {
   }
   // TRAER DATOS | ( EQUIPO, MARCA, MODELO)
   public getAllGroup(): Observable<any> {
+    console.log('servicio de grupos');
     return this.http.get(this.EQUIPO_ALLGROUP);
   }
   // POR TIPO DE EQUIPO

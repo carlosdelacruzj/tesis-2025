@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AgregarPedido, EditarPedido, Proyecto, EventServi2 } from '../model/visualizar.model';
 import { Pedido } from '../../gestionar-proyecto/model/pedido.model';
+import { environment } from 'src/environments/environment';
 @Injectable({
   providedIn: 'root',
 })
@@ -23,7 +24,7 @@ export class VisualizarService {
     Direccion: '',
     Descripcion: '',
     NombrePedido: '',
-    Ubicacion:'',
+    Ubicacion: '',
     Latitud: null,
     Longitud: null,
     F_Evento2: '',
@@ -39,7 +40,7 @@ export class VisualizarService {
     EP_Cod: 0,
     fecha: '',
     hora: '',
-    ubicacion:'',
+    ubicacion: '',
     lugar: '',
     latitud: '',
     longitud: '',
@@ -65,7 +66,7 @@ export class VisualizarService {
 
   };
 
-
+  private GET_EVENTO_BY_SERVICIOS = `${environment.baseUrl}/eventos_servicios`;
   private API_VISUALIZAR =
     'https://tp2021database.herokuapp.com/pedido/consulta/getByIDPedido/';
 
@@ -74,9 +75,9 @@ export class VisualizarService {
 
   private API_AGREGARPEDIDO =
     'https://tp2021database.herokuapp.com/pedido/registro/postPedido';
-    
-  private GET_EVENTO_BY_SERVICIOS =
-  'https://tp2021database.herokuapp.com/eventos_servicios/consulta/getAllServiciosByEventoServ/';
+
+  // private GET_EVENTO_BY_SERVICIOS =
+  // 'https://tp2021database.herokuapp.com/eventos_servicios/consulta/getAllServiciosByEventoServ/';
 
   constructor(private http: HttpClient) { }
 
@@ -84,13 +85,18 @@ export class VisualizarService {
   public getPedidoID(id: any): Observable<any> {
     return this.http.get(this.API_VISUALIZAR + id);
   }
-  public getEventosServicio(evento:number,servicio:number):Observable<any>{
-    return this.http.get(this.GET_EVENTO_BY_SERVICIOS + `${evento}` + '/' + `${servicio}`);
+  public getEventosServicio(evento?: number, servicio?: number) {
+    let params = new HttpParams();
+    if (evento != null) params = params.set('evento', String(evento));
+    if (servicio != null) params = params.set('servicio', String(servicio));
+
+    return this.http.get<any[]>(this.GET_EVENTO_BY_SERVICIOS, { params });
   }
-  public putPedido(data:any): Observable<any> {console.log(data)
+  public putPedido(data: any): Observable<any> {
+    console.log(data)
     return this.http.put(this.API_EDITARPEDIDO, data)
   }
-  public postPedidos(data :any) {
+  public postPedidos(data: any) {
     return this.http.post(this.API_AGREGARPEDIDO, data)
   }
 

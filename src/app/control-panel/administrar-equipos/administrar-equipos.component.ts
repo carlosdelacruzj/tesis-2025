@@ -135,6 +135,8 @@ export class AdministrarEquiposComponent implements OnInit {
   //Muestra de tabla equipos adquiridos
   getEquipos() {
     this.service.getAllGroup().subscribe((response: any) => {
+      console.log(response);
+      
       this.dataSource = new MatTableDataSource(response);
       this.dataSource.paginator = this.paginator;
       this.dataSource.sort = this.matSort;
