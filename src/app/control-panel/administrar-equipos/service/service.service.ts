@@ -192,8 +192,9 @@ export class AdministrarEquiposService {
   private PUT_STATUS =
     'https://tp2021database.herokuapp.com/equipo/actualiza/putEstadoEquipo';
 
-  private EXI_SERIE =
-    'https://tp2021database.herokuapp.com/equipo/consulta/getExistEquipo';
+  // private EXI_SERIE =
+  //   'https://tp2021database.herokuapp.com/equipo/consulta/getExistEquipo';
+  private EXI_SERIE = this.base + '/existe';
 
   private GET_EQUIPOSA =
     'https://tp2021database.herokuapp.com/equiposAlquilado/consulta/getAllEquiposAlquilado';

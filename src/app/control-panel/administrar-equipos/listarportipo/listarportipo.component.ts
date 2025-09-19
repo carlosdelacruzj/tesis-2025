@@ -7,6 +7,7 @@ import { NgbModalConfig, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { NgForm } from '@angular/forms';
 import swal from 'sweetalert2';
 import { formatDate } from '@angular/common';
+import { take, map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-listarportipo',
@@ -28,7 +29,8 @@ export class ListarportipoComponent implements OnInit {
 
   existe: number = 0;
 
-  seriePattern = "^[A-Z]{3,3}[-]{1,1}[0-9]{3,3}$"
+  seriePattern = "^[A-Z]{3}-[0-9]{4}$";
+
 
   hoy: number = Date.now();
   sHoy = '';
@@ -66,8 +68,8 @@ export class ListarportipoComponent implements OnInit {
     this.service
       .getEquipoMarcaModelo(this.idEquipo, this.idMarca, this.idModelo)
       .subscribe((response: any) => {
-       console.log(response);
-        
+        console.log(response);
+
         this.dataSource1 = new MatTableDataSource(response);
         this.dataSource1.paginator = this.paginator1;
         this.dataSource1.sort = this.matSort1;
@@ -90,78 +92,85 @@ export class ListarportipoComponent implements OnInit {
       this.dataSource2.sort = this.matSort2;
     });
   }
-  //Selector de seria devuelve. Existe = 1 | No existe = 0
+  // Selector de seria devuelve. Existe = 1 | No existe = 0
   getSerie2(idEquipo: string) {
-    this.service.getExisteSerie(idEquipo).subscribe((response: any) => {
-      this.existe = response;
-    });
+    const serie = (idEquipo || '').toString().trim().toUpperCase();
+    // devolvemos el observable para poder encadenar en addEquipo
+    return this.service.getExisteSerie(serie).pipe(
+      take(1),
+      map((response: any) => Number(response)) // por si llega como string
+    );
   }
   //Registro de equipo
-  addEquipo(equipoForm: NgForm) {
-    this.getSerie2(equipoForm.value.idEquipo)
-    console.log(this.existe, equipoForm.value.idEquipo)
+addEquipo(equipoForm: NgForm) {
+  const serie = (equipoForm.value.idEquipo || '').toString().trim().toUpperCase();
+
+  this.getSerie2(serie).subscribe((existe: number) => {
+    this.existe = existe;
+    console.log('EXISTE: ', this.existe, serie);
+
     if (this.existe === 1) {
       swal.fire({
         text: 'La serie ingresada ya existe',
         icon: 'warning',
         showCancelButton: false,
-        customClass: {
-          confirmButton: 'btn btn-warning',
-        },
+        customClass: { confirmButton: 'btn btn-warning' },
         buttonsStyling: false
-      })
-    } else if (this.existe === 0) {
-      swal
-        .fire({
-          title: 'Esta seguro del registro?',
-          text: 'El equipo se registrara con el modelo ' + this.Modelo,
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonColor: '#3085d6',
-          cancelButtonColor: '#d33',
-          confirmButtonText: 'Si, registrar ahora!',
-          cancelButtonText: 'Cancelar'
-        })
-        .then((options) => {
-          if (options.isConfirmed) {
-            swal.fire({
-              text: 'Registro exitoso',
-              icon: 'success',
-              showCancelButton: false,
-              customClass: {
-                confirmButton: 'btn btn-success',
-              },
-              buttonsStyling: false
-            })
-            let data = {
-              idEquipo: equipoForm.value.idEquipo,
-              fecha: equipoForm.value.fecha,
-              modelo: equipoForm.value.modelo
-            };
-            this.service.rEquipo(data).subscribe(
-              (res) => {
-                console.log('DATA: ', res);
-                this.clear(equipoForm);
-                this.getEquipoMarcaModeloAll();
-                this.getCEstados();
-              },
-              (err) => {
-                console.error(err)
-                swal.fire({
-                  text: 'Ocurrió un error, volver a intentar.',
-                  icon: 'warning',
-                  showCancelButton: false,
-                  customClass: {
-                    confirmButton: 'btn btn-warning',
-                  },
-                  buttonsStyling: false
-                });
-              }
-            );
-          }
-        })
+      });
+      return;
     }
-  }
+
+    // this.existe === 0
+    swal
+      .fire({
+        title: 'Esta seguro del registro?',
+        text: 'El equipo se registrara con el modelo ' + this.Modelo,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Si, registrar ahora!',
+        cancelButtonText: 'Cancelar'
+      })
+      .then((options) => {
+        if (!options.isConfirmed) return;
+
+        swal.fire({
+          text: 'Registro exitoso',
+          icon: 'success',
+          showCancelButton: false,
+          customClass: { confirmButton: 'btn btn-success' },
+          buttonsStyling: false
+        });
+
+        const data = {
+          idEquipo: serie,
+          fecha: equipoForm.value.fecha,
+          modelo: equipoForm.value.modelo
+        };
+
+        this.service.rEquipo(data).subscribe(
+          (res) => {
+            console.log('DATA: ', res);
+            this.clear(equipoForm);
+            this.getEquipoMarcaModeloAll();
+            this.getCEstados();
+          },
+          (err) => {
+            console.error(err);
+            swal.fire({
+              text: 'Ocurrió un error, volver a intentar.',
+              icon: 'warning',
+              showCancelButton: false,
+              customClass: { confirmButton: 'btn btn-warning' },
+              buttonsStyling: false
+            });
+          }
+        );
+      });
+  });
+}
+
   clear(equipoForm: NgForm) {
     equipoForm.reset();
   }

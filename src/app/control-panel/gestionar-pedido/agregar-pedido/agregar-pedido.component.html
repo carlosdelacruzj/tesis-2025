@@ -12,20 +12,24 @@
                         <mat-card-content class="card-body">
                             <div class="form-group">
                                 <label class='col-form-label'>Pedido</label>
-                                <input type="text" class="form-control" name="NombrePedido" [(ngModel)]="visualizarService.selectAgregarPedido.NombrePedido" required>
+                                <input type="text" class="form-control" name="NombrePedido"
+                                    [(ngModel)]="visualizarService.selectAgregarPedido.NombrePedido" required>
                             </div>
                             <div class="form-group">
                                 <label class='col-form-label'>Empleado</label>
-                                <input type="text" name="CodigoEmpleado" [(ngModel)]="CodigoEmpleado" class="form-control" disabled>
+                                <input type="text" name="CodigoEmpleado" [(ngModel)]="CodigoEmpleado"
+                                    class="form-control" disabled>
                             </div>
 
                             <div class="form-group">
                                 <label class='col-form-label'>Fecha de registro</label>
-                                <input type="text" class="form-control" name="fechaCreate" [(ngModel)]="visualizarService.selectAgregarPedido.fechaCreate" disabled>
+                                <input type="text" class="form-control" name="fechaCreate"
+                                    [(ngModel)]="visualizarService.selectAgregarPedido.fechaCreate" disabled>
                             </div>
                         </mat-card-content>
                     </mat-card>
                 </div>
+
                 <div class="col ms-auto">
                     <mat-card class="card">
                         <mat-card-header>
@@ -37,88 +41,274 @@
                                 <div class="input-group mb-3">
                                     <input type="text" class="form-control" name="dni" [(ngModel)]="dniCliente">
                                     <div class="input-group-append">
-                                        <button (click)="buscarCliente(dniCliente)" type="button" class="btn btn-danger">Buscar</button>
+                                        <button (click)="buscarCliente(dniCliente)" type="button"
+                                            class="btn btn-danger">Buscar</button>
                                     </div>
                                 </div>
                             </div>
                             <div class="form-group">
                                 <label class='col-form-label'>Nombres</label>
-                                <input type="text" class="form-control" name="nombre" [(ngModel)]="infoCliente.nombre" disabled>
+                                <input type="text" class="form-control" name="nombre" [(ngModel)]="infoCliente.nombre"
+                                    disabled>
                             </div>
                             <div class="form-group">
                                 <label class='col-form-label'>Apellidos</label>
-                                <input type="text" class="form-control" name="Apellido" [(ngModel)]="infoCliente.apellido" disabled>
+                                <input type="text" class="form-control" name="Apellido"
+                                    [(ngModel)]="infoCliente.apellido" disabled>
                             </div>
                         </mat-card-content>
                     </mat-card>
                 </div>
             </div>
+
+            <!-- ================== DATOS DEL EVENTO ================== -->
             <mat-card class="card">
                 <mat-card-header>
                     <mat-card-title>Datos del evento</mat-card-title>
                 </mat-card-header>
+
                 <mat-card-content class="card-body">
                     <div class="row">
                         <div class="col ms-auto">
                             <div class="form-group">
                                 <label class='col-form-label'>Hora</label>
-                                <input type="time" class="form-control" name="horaEvent" [(ngModel)]="visualizarService.selectAgregarPedido.horaEvent" required>
+                                <input type="time" class="form-control" name="horaEvent"
+                                    [(ngModel)]="visualizarService.selectAgregarPedido.horaEvent" required>
                             </div>
                         </div>
                         <div class="col ms-auto">
                             <div class="form-group">
                                 <label class='col-form-label'>Fecha</label>
-                                <input type="date" class="form-control" min="{{minimo}}" max="{{maximo}}" name="fechaEvent" [(ngModel)]="visualizarService.selectAgregarPedido.fechaEvent" required>
+                                <input type="date" class="form-control" min="{{minimo}}" max="{{maximo}}"
+                                    name="fechaEvent" [(ngModel)]="visualizarService.selectAgregarPedido.fechaEvent"
+                                    required>
                             </div>
                         </div>
                     </div>
+
                     <div class="row">
                         <div class="col ms-auto">
                             <div class="form-group">
                                 <label class='col-form-label'>Ubicacion</label>
                                 <div class="input-group mb-3">
-                                    <input type="text" class="form-control" name="Direc" [(ngModel)]="Direccion" autocomplete="off">
-                                    <div class="input-group-append">
-                                        <button type="button" class="btn btn-danger" (click)="addListUbicacion(Direccion,visualizarService.selectAgregarPedido.fechaEvent,visualizarService.selectAgregarPedido.horaEvent)">+</button>
-                                    </div>
+                                    <input type="text" class="form-control" name="Direc" [(ngModel)]="Direccion"
+                                        autocomplete="off" (keyup.enter)="onQuickAdd()">
+                                    <div class="input-group-append"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
+                    <!-- Tags dinámicos (pedido / cliente) -->
+                    <div class="row mt-2" *ngIf="tagsPedido.length">
+                        <div class="col">
+                            <!-- <span class="me-2">Tags (pedido):</span> -->
+                            <span class="me-2">Tags:</span>
+                            <ng-container *ngFor="let t of tagsPedido">
+                                <button type="button" class="btn btn-light btn-sm me-2" title="{{t.direccion}}"
+                                    (click)="applyTag(t)">
+                                    {{ t.nombre }}
+                                </button>
+                                <button type="button" class="btn btn-link text-danger p-0 me-3" title="Eliminar tag"
+                                    (click)="removeTag(t,'pedido')">✖</button>
+                            </ng-container>
+                        </div>
+                    </div>
+
+                    <!-- <div class="row mt-1" *ngIf="tagsCliente.length">
+                        <div class="col">
+                            <span class="me-2">Tags (cliente):</span>
+                            <ng-container *ngFor="let t of tagsCliente">
+                                <button type="button" class="btn btn-outline-secondary btn-sm me-2"
+                                    title="{{t.direccion}}" (click)="applyTag(t)">
+                                    {{ t.nombre }}
+                                </button>
+                                <button type="button" class="btn btn-link text-danger p-0 me-3" title="Eliminar tag"
+                                    (click)="removeTag(t,'cliente')">✖</button>
+                            </ng-container>
+                        </div>
+                    </div> -->
+
+                    <!-- Dirección exacta y Notas -->
+                    <div class="row mt-2">
+                        <div class="col ms-auto">
+                            <div class="form-group">
+                                <label class="col-form-label">Dirección exacta</label>
+                                <input type="text" class="form-control" name="DireccionExacta"
+                                    [(ngModel)]="DireccionExacta" autocomplete="off">
+                            </div>
+                        </div>
+                        <div class="col ms-auto">
+                            <div class="form-group">
+                                <label class="col-form-label">Notas</label>
+                                <input type="text" class="form-control" name="NotasEvento" [(ngModel)]="NotasEvento"
+                                    autocomplete="off">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Guardar como tag -->
+                    <div class="row mt-2">
+                        <div class="col">
+                            <button type="button" class="btn btn-outline-primary btn-sm me-2"
+                                [disabled]="!canGuardarTag" (click)="saveTag('pedido')">Guardar como tag
+                                </button>
+                            <!-- <button type="button" class="btn btn-outline-secondary btn-sm"
+                                [disabled]="!canGuardarTag || !dniCliente" (click)="saveTag('cliente')">Guardar como tag
+                                (cliente)</button> -->
+                        </div>
+                    </div>
+
+                    <!-- Agregar fila -->
+                    <div class="row mt-2">
+                        <div class="col text-end">
+                            <button type="button" class="btn btn-danger" [disabled]="!canAgregarEvento"
+                                (click)="onQuickAdd()">Agregar</button>
+                        </div>
+                    </div>
+
                     <div class="row">
-                        <table mat-table [dataSource]="dataSource" matSort class="table">
+                        <!-- <table mat-table [dataSource]="dataSource" matSort class="table"> -->
+                        <table mat-table [dataSource]="dataSource" matSort class="table" cdkDropList
+                            (cdkDropListDropped)="drop($event)">
+                            <ng-container matColumnDef="Nro">
+                                <th mat-header-cell *matHeaderCellDef> # </th>
+                                <td mat-cell *matCellDef="let element">
+                                    {{ (dataSource?.data?.indexOf(element) ?? 0) + 1 }}
+                                </td>
+                            </ng-container>
 
                             <ng-container matColumnDef="Fecha">
-                              <th mat-header-cell mat-sort-header *matHeaderCellDef> Fecha </th>
-                              <td mat-cell *matCellDef="let element"> {{element.Fecha}} </td>
+                                <th mat-header-cell *matHeaderCellDef> Fecha </th>
+                                <td mat-cell *matCellDef="let element">
+                                    <ng-container *ngIf="!element.editing; else fechaEdit">
+                                        {{ element.Fecha }} ({{ weekdayPeru(element.Fecha) }})
+                                    </ng-container>
+                                    <!-- <ng-template #fechaEdit>
+                                        <input type="date" class="form-control form-control-sm"
+                                            [(ngModel)]="element.Fecha" [ngModelOptions]="{standalone:true}">
+                                    </ng-template> -->
+                                    <ng-template #fechaEdit>
+                                        <input type="date" class="form-control form-control-sm"
+                                            [(ngModel)]="element.Fecha" [ngModelOptions]="{standalone:true}" required>
+                                        <small class="text-danger" *ngIf="!element.Fecha">Requerido</small>
+                                    </ng-template>
+                                </td>
                             </ng-container>
+
                             <ng-container matColumnDef="Hora">
-                                <th mat-header-cell mat-sort-header *matHeaderCellDef> Hora </th>
-                                <td mat-cell *matCellDef="let element"> {{element.Hora}} </td>
-                              </ng-container>
+                                <th mat-header-cell *matHeaderCellDef> Hora </th>
+                                <td mat-cell *matCellDef="let element">
+                                    <ng-container *ngIf="!element.editing; else horaEdit">
+                                        {{ element.Hora }}
+                                    </ng-container>
+                                    <!-- <ng-template #horaEdit>
+                                        <input type="time" class="form-control form-control-sm"
+                                            [(ngModel)]="element.Hora" [ngModelOptions]="{standalone:true}">
+                                    </ng-template> -->
+                                    <ng-template #horaEdit>
+                                        <input type="time" class="form-control form-control-sm"
+                                            [(ngModel)]="element.Hora" [ngModelOptions]="{standalone:true}" required>
+                                        <small class="text-danger" *ngIf="!element.Hora">Requerido</small>
+                                    </ng-template>
+                                </td>
+                            </ng-container>
 
                             <ng-container matColumnDef="Direccion">
                                 <th mat-header-cell *matHeaderCellDef> Direccion </th>
-                                <td mat-cell *matCellDef="let element"> {{element.Direccion}} </td>
+                                <td mat-cell *matCellDef="let element">
+                                    <ng-container *ngIf="!element.editing; else dirEdit">
+                                        {{ element.Direccion }}
+                                    </ng-container>
+                                    <!-- <ng-template #dirEdit>
+                                        <input type="text" class="form-control form-control-sm"
+                                            [(ngModel)]="element.Direccion" [ngModelOptions]="{standalone:true}">
+                                    </ng-template> -->
+                                    <ng-template #dirEdit>
+                                        <input type="text" class="form-control form-control-sm"
+                                            [(ngModel)]="element.Direccion" [ngModelOptions]="{standalone:true}"
+                                            required>
+                                        <small class="text-danger" *ngIf="!element.Direccion">Requerido</small>
+                                    </ng-template>
+                                </td>
                             </ng-container>
 
-                            <!-- <ng-container matColumnDef="Coordenadas">
-                              <th mat-header-cell mat-sort-header *matHeaderCellDef> Coordenadas </th>
-                              <td mat-cell *matCellDef="let element"> {{element.Coordenadas}} </td>
-                            </ng-container> -->
-                            <!-- Boton Visualizar -->
+                            <ng-container matColumnDef="DireccionExacta">
+                                <th mat-header-cell *matHeaderCellDef> Dirección exacta </th>
+                                <td mat-cell *matCellDef="let element">
+                                    <ng-container *ngIf="!element.editing; else dexEdit">
+                                        {{ element.DireccionExacta }}
+                                    </ng-container>
+                                    <!-- <ng-template #dexEdit>
+                                        <input type="text" class="form-control form-control-sm"
+                                            [(ngModel)]="element.DireccionExacta" [ngModelOptions]="{standalone:true}">
+                                    </ng-template> -->
+                                    <ng-template #dexEdit>
+                                        <input type="text" class="form-control form-control-sm"
+                                            [(ngModel)]="element.DireccionExacta" [ngModelOptions]="{standalone:true}"
+                                            minlength="8" required>
+                                        <small class="text-danger"
+                                            *ngIf="(element.DireccionExacta||'').trim().length < 8">
+                                            Mínimo 8 caracteres
+                                        </small>
+                                    </ng-template>
+                                </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="Notas">
+                                <th mat-header-cell *matHeaderCellDef> Notas </th>
+                                <td mat-cell *matCellDef="let element">
+                                    <ng-container *ngIf="!element.editing; else notasEdit">
+                                        {{ element.Notas }}
+                                    </ng-container>
+                                    <ng-template #notasEdit>
+                                        <input type="text" class="form-control form-control-sm"
+                                            [(ngModel)]="element.Notas" maxlength="255"
+                                            [ngModelOptions]="{standalone:true}">
+                                    </ng-template>
+                                </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="Editar">
+                                <th mat-header-cell *matHeaderCellDef> Editar </th>
+                                <td mat-cell *matCellDef="let element">
+                                    <ng-container *ngIf="!element.editing; else accionesEdit">
+                                        <button class="btn p-0" (click)="startEdit(element)">✏️ Editar</button>
+                                    </ng-container>
+                                    <!-- <ng-template #accionesEdit>
+                                        <button class="btn p-0 me-2" (click)="saveEdit(element)">💾
+                                            Guardar</button>
+                                        <button class="btn text-danger p-0" (click)="cancelEdit(element)">✖
+                                            Cancelar</button>
+                                    </ng-template> -->
+                                    <ng-template #accionesEdit>
+                                        <button class="btn p-0 me-2" (click)="saveEdit(element)"
+                                            [disabled]="rowInvalid(element)">💾 Guardar</button>
+                                        <button class="btn text-danger p-0" (click)="cancelEdit(element)">✖
+                                            Cancelar</button>
+                                    </ng-template>
+                                </td>
+                            </ng-container>
+
                             <ng-container matColumnDef="Quitar">
                                 <th mat-header-cell *matHeaderCellDef> Quitar </th>
-                                <td mat-cell *matCellDef="let element"> <button class="btn mx-auto" style="background-color:transparent" (click)="deleteElement(element.Direccion,element.Hora)"><i class="fa fa-trash fa-2x"></i></button> </td>
+                                <td mat-cell *matCellDef="let element">
+                                    <button class="btn mx-auto" style="background-color:transparent"
+                                        (click)="deleteElement(element.Direccion,element.Hora)">
+                                        <i class="fa fa-trash fa-2x"></i>
+                                    </button>
+                                </td>
                             </ng-container>
 
                             <tr mat-header-row *matHeaderRowDef="columnsToDisplay"></tr>
-                            <tr mat-row *matRowDef="let row; columns: columnsToDisplay;"></tr>
+                            <!-- <tr mat-row *matRowDef="let row; columns: columnsToDisplay;"></tr> -->
+                            <tr mat-row *matRowDef="let row; columns: columnsToDisplay;" cdkDrag></tr>
                         </table>
                     </div>
                 </mat-card-content>
             </mat-card>
+
+            <!-- ================== SERVICIOS / PAQUETES ================== -->
             <mat-card class="card">
                 <mat-card-header>
                     <mat-card-title>Datos del evento</mat-card-title>
@@ -128,7 +318,9 @@
                         <div class="col ms-auto">
                             <div class="form-group">
                                 <label class='col-form-label'>Servicio</label>
-                                <select type="text" class="form-control form-control-sm" name="servicio" [(ngModel)]="servicioSeleccionado" (ngModelChange)="asignarServicio($event)" requiered>
+                                <select type="text" class="form-control form-control-sm" name="servicio"
+                                    [(ngModel)]="servicioSeleccionado" (ngModelChange)="asignarServicio($event)"
+                                    requiered>
                                     <option *ngFor="let s of servicios" [value]="s.id">{{s.nombre}}</option>
                                 </select>
                             </div>
@@ -136,8 +328,9 @@
                         <div class="col ms-auto">
                             <div class="form-group">
                                 <label class='col-form-label'>Evento</label>
-                                <select type="text" class="form-control form-control-sm" name="evento" [(ngModel)]="eventoSeleccionado" (ngModelChange)="asignarEvento($event)" requiered>
-                                    <option *ngFor="let e of evento" [value]="e.PK_E_Cod">{{e.E_Nombre}}
+                                <select type="text" class="form-control form-control-sm" name="evento"
+                                    [(ngModel)]="eventoSeleccionado" (ngModelChange)="asignarEvento($event)" requiered>
+                                    <option *ngFor="let e of evento" [value]="e.PK_E_Cod">{{e.E_Nombre}}</option>
                                 </select>
                             </div>
                         </div>
@@ -145,7 +338,6 @@
 
                     <div class="row">
                         <table mat-table [dataSource]="dataSource1" matSort class="table">
-
                             <ng-container matColumnDef="Descripcion">
                                 <th mat-header-cell mat-sort-header *matHeaderCellDef> Descripcion </th>
                                 <td mat-cell *matCellDef="let element"> {{element.descripcion}} </td>
@@ -156,32 +348,37 @@
                                 <td mat-cell *matCellDef="let element"> {{element.precio}} </td>
                             </ng-container>
 
-                            <!-- Boton Visualizar -->
                             <ng-container matColumnDef="Seleccionar">
                                 <th mat-header-cell *matHeaderCellDef> Seleccionar </th>
                                 <td mat-cell *matCellDef="let element">
-                                    <mat-radio-group name="Descripcion" [(ngModel)]="selectedDescripcion" (ngModelChange)="radioSelected()">
+                                    <mat-radio-group name="Descripcion" [(ngModel)]="selectedDescripcion"
+                                        (ngModelChange)="radioSelected()">
                                         <mat-radio-button value={{element.ID}}></mat-radio-button>
                                     </mat-radio-group>
+                                </td>
                             </ng-container>
 
                             <tr mat-header-row *matHeaderRowDef="columnsToDisplay1"></tr>
                             <tr mat-row *matRowDef="let row; columns: columnsToDisplay1;"></tr>
                         </table>
                     </div>
+
                     <div class="form-group">
                         <label class='col-form-label'>Observaciones</label>
-                        <textarea type="text" class="form-control" name="Observacion" rows="5" [(ngModel)]="visualizarService.selectAgregarPedido.Observacion">    
-                            </textarea>
+                        <textarea type="text" class="form-control" name="Observacion" rows="5"
+                            [(ngModel)]="visualizarService.selectAgregarPedido.Observacion">
+            </textarea>
                     </div>
                 </mat-card-content>
             </mat-card>
+
             <div class="row" style="text-align: center;">
                 <div class="col-6" style="text-align: right;">
                     <button type="button" class="btn btn-outline-dark" (click)="postPedido()">Registrar</button>
                 </div>
                 <div class="col-6" style="text-align: left;">
-                    <button type="button" class="btn btn-outline-dark" [routerLink]="['/home/gestionar-pedido']">Atrás</button>
+                    <button type="button" class="btn btn-outline-dark"
+                        [routerLink]="['/home/gestionar-pedido']">Atrás</button>
                 </div>
             </div>
         </form>
