@@ -49,8 +49,9 @@ export class PedidoService {
   //   Titulo: '',
   // };
 
-  private API_PRUEBA =
-    'https://tp2021database.herokuapp.com/pedido/consulta/getAllPedido';
+  private API_PRUEBA = `${environment.baseUrl}/pedido`;
+  // private API_PRUEBA =
+  //   'https://tp2021database.herokuapp.com/pedido/consulta/getAllPedido';
   private API_N_Pedido =
     'https://tp2021database.herokuapp.com/pedido/consulta/getIndexPedido';
 
@@ -68,7 +69,7 @@ export class PedidoService {
   constructor(private http: HttpClient) { }
 
 
-  public getAllNombres(): Observable<any> {
+  public getAllPedidos(): Observable<any> {
     return this.http.get(this.API_PRUEBA);
   }
   // public getDni(id: any): Observable<any> {

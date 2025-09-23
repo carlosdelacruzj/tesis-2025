@@ -1,10 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { MatTableDataSource } from '@angular/material/table';
 import { PedidoService } from '../service/pedido.service';
 import { VisualizarService } from '../service/visualizar.service';
 import swal from 'sweetalert2';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
-import { Time } from '@angular/common';
+import { MatSort } from '@angular/material/sort';
+import { of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 type Tag = { nombre: string; direccion: string; usedAt?: number };
 
@@ -13,48 +15,87 @@ type Tag = { nombre: string; direccion: string; usedAt?: number };
   templateUrl: './agregar-pedido.component.html',
   styleUrls: ['./agregar-pedido.component.css']
 })
-export class AgregarPedidoComponent implements OnInit {
-
-  // columnas (eventos)
+export class AgregarPedidoComponent implements OnInit, AfterViewInit {
+  // ====== Columnas ======
   columnsToDisplay = ['Nro', 'Fecha', 'Hora', 'Direccion', 'DireccionExacta', 'Notas', 'Editar', 'Quitar'];
-  // columnas (paquetes)
   columnsToDisplay1 = ['Descripcion', 'Precio', 'Seleccionar'];
 
-  eventoxsevicio: any[] = [];
+  // ====== Data y catálogos ======
   servicios: any[] = [];
+  evento: any[] = [];
   servicioSeleccionado = 1;
   eventoSeleccionado = 1;
-  CodigoEmpleado: number = 1;
-  evento: any[] = [];
-  dataSource!: MatTableDataSource<any>;
-  dataSource1!: MatTableDataSource<any>;
-  desID = 0;
 
-  infoCliente = { nombre: '-', apellido: '-' };
+  // ⚠️ Inicializados para que nunca sean undefined
+  dataSource: MatTableDataSource<any> = new MatTableDataSource<any>([]);
+  dataSource1: MatTableDataSource<any> = new MatTableDataSource<any>([]);
+
+  // ====== MatSort (2 tablas)
+  @ViewChild('sortUbic') sortUbic!: MatSort;
+  @ViewChild('sortPaq') sortPaq!: MatSort;
+
+  private bindSorts() {
+    if (this.sortUbic) this.dataSource.sort = this.sortUbic;
+    if (this.sortPaq) this.dataSource1.sort = this.sortPaq;
+  }
+
+  // ====== Estado general ======
+  CodigoEmpleado: number = 1;
+  infoCliente = { nombre: '-', apellido: '-', celular: '-', correo: '-', documento: '-', direccion: '-', idCliente: 0, idUsuario: 0 };
   dniCliente: any;
 
+  // ====== Evento actual (inputs) ======
   Direccion: any;
   DireccionExacta: string = '';
   NotasEvento: string = '';
 
+  // ====== Fechas ======
   fechaCreate: Date = new Date();
   minimo: string;
   maximo: string;
 
+  // ====== Ubicaciones ======
   ubicacion = [{ ID: 0, Direccion: '', Fecha: '', Hora: '', DireccionExacta: '', Notas: '' }];
 
-  lat: any;
-  lng: any;
+  // ====== Paquetes seleccionados ======
+  selectedPaquetes: Array<{
+    key: string | number;
+    eventKey: string | number | null;
+    ID?: number;
+    descripcion: string;
+    precio: number;
+    notas: string;
+  }> = [];
+  desID = 0;
+  currentEventoKey: string | number | null = null;
 
-  selectedDescripcion: any;
+  // ====== TAGS ======
+  tagsPedido: Tag[] = [];
+  tagsCliente: Tag[] = [];
 
-  // ====== TAGS (solo front) ======
-  tagsPedido: Tag[] = [];   // visibles solo mientras armas este pedido
-  tagsCliente: Tag[] = [];  // persistentes por cliente en este navegador
+  constructor(
+    public pedidoService: PedidoService,
+    public visualizarService: VisualizarService,
+  ) { }
 
-  constructor(public pedidoService: PedidoService, public visualizarService: VisualizarService,) { }
+  // ====== Ciclo de vida ======
+  ngOnInit(): void {
+    this.getEventos();
+    this.getServicio();
+    this.getEventoxServicio();
 
-  // ====== Helpers Tags ======
+    this.visualizarService.selectAgregarPedido.fechaCreate = this.fechaCreate.toLocaleDateString();
+    this.fechaValidate(this.fechaCreate);
+
+    if (this.dniCliente) this.loadTagsCliente();
+  }
+
+  ngAfterViewInit(): void {
+    // Enlaza sorts cuando ya existen las vistas
+    this.bindSorts();
+  }
+
+  // ====== Helpers TAGS ======
   get tagStorageKey(): string {
     return `ubicTags:${this.dniCliente || 'anon'}`;
   }
@@ -62,11 +103,16 @@ export class AgregarPedidoComponent implements OnInit {
   private norm(s: string): string {
     return (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
   }
+
   private findTagIndexByNombre(arr: Tag[], nombre: string): number {
     const n = this.norm(nombre);
     return arr.findIndex(t => this.norm(t.nombre) === n);
   }
 
+  private getPkgKey(el: any): string | number {
+    return el?.ID ?? el?.PK_ExS_Cod ?? el?.pk ?? `${(el?.descripcion || '').trim()}|${el?.precio}`;
+  }
+  public pkgKey = (el: any) => this.getPkgKey(el);
 
   get canGuardarTag(): boolean {
     const u = this.norm(this.Direccion);
@@ -78,11 +124,12 @@ export class AgregarPedidoComponent implements OnInit {
     try {
       const raw = localStorage.getItem(this.tagStorageKey);
       this.tagsCliente = raw ? JSON.parse(raw) : [];
-    } catch { this.tagsCliente = []; }
+    } catch {
+      this.tagsCliente = [];
+    }
   }
 
   saveTagsCliente() {
-    // cap de items
     const max = 12;
     const arr = this.tagsCliente
       .sort((a: Tag, b: Tag) => (b.usedAt || 0) - (a.usedAt || 0))
@@ -100,7 +147,6 @@ export class AgregarPedidoComponent implements OnInit {
     if (scope === 'pedido') {
       const idx = this.findTagIndexByNombre(this.tagsPedido, nombre);
       if (idx >= 0) {
-        // actualizar dirección y usedAt, y llevar al frente
         this.tagsPedido[idx] = { ...this.tagsPedido[idx], direccion, usedAt: now };
         const updated = this.tagsPedido.splice(idx, 1)[0];
         this.tagsPedido.unshift(updated);
@@ -120,13 +166,11 @@ export class AgregarPedidoComponent implements OnInit {
     }
   }
 
-
   applyTag(tag: Tag) {
     this.Direccion = tag.nombre;
     this.DireccionExacta = tag.direccion;
-    // marca uso reciente
     tag.usedAt = Date.now();
-    this.tagsCliente = [...this.tagsCliente]; // trigger change detection si corresponde
+    this.tagsCliente = [...this.tagsCliente];
     this.saveTagsCliente();
   }
 
@@ -143,36 +187,6 @@ export class AgregarPedidoComponent implements OnInit {
     }
   }
 
-  // ====== Inline edit filas ======
-  startEdit(row: any) {
-    row._backup = { ...row };
-    row.editing = true;
-  }
-
-  saveEdit(row: any) {
-    row.editing = false;
-    delete row._backup;
-    this.dataSource = new MatTableDataSource(this.ubicacion);
-  }
-
-  cancelEdit(row: any) {
-    Object.assign(row, row._backup);
-    row.editing = false;
-    delete row._backup;
-    this.dataSource = new MatTableDataSource(this.ubicacion);
-  }
-
-  // ====== Ciclo vida ======
-  ngOnInit(): void {
-    this.getEventos();
-    this.getServicio();
-    this.getEventoxServicio();
-    this.visualizarService.selectAgregarPedido.fechaCreate = this.fechaCreate.toLocaleDateString();
-    this.fechaValidate(this.fechaCreate);
-    // si ya hay DNI cargado en el modelo, intenta cargar sus tags
-    if (this.dniCliente) this.loadTagsCliente();
-  }
-
   // ====== Fechas ======
   fechaValidate(date) {
     this.minimo = this.addDaysToDate(date, -10);
@@ -181,9 +195,9 @@ export class AgregarPedidoComponent implements OnInit {
 
   convert(str) {
     var date = new Date(str),
-      mnth = ("0" + (date.getMonth() + 1)).slice(-2),
-      day = ("0" + date.getDate()).slice(-2);
-    return [date.getFullYear(), mnth, day].join("-");
+      mnth = ('0' + (date.getMonth() + 1)).slice(-2),
+      day = ('0' + date.getDate()).slice(-2);
+    return [date.getFullYear(), mnth, day].join('-');
   }
 
   addDaysToDate(date, days) {
@@ -196,44 +210,62 @@ export class AgregarPedidoComponent implements OnInit {
     if (!fechaISO) return '';
     const [y, m, d] = fechaISO.split('-').map(Number);
     const dtUTC = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
-    const fmt = new Intl.DateTimeFormat('es-PE', {
-      weekday: 'short',
-      timeZone: 'America/Lima',
-    });
-    return fmt.format(dtUTC); // ej. "vie"
+    const fmt = new Intl.DateTimeFormat('es-PE', { weekday: 'short', timeZone: 'America/Lima' });
+    return fmt.format(dtUTC);
   }
+
   rowInvalid(row: any): boolean {
     const fechaOk = !!row.Fecha;
     const horaOk = !!row.Hora;
     const dex = (row.DireccionExacta || '').trim();
     const direccionOk = !!(row.Direccion && row.Direccion.trim());
-    const dexOk = dex.length >= 8; // mínimo visible
+    const dexOk = dex.length >= 8;
     return !(fechaOk && horaOk && direccionOk && dexOk);
   }
 
   // ====== Cliente ======
   getDataCliente(dni: number) {
-    this.pedidoService.getDni(dni).subscribe((res) => {
+    const obs: any = this.pedidoService.getDni?.(dni);
+    if (!obs || typeof obs.subscribe !== 'function') {
+      console.warn('[getDni] devolvió undefined o no-Observable');
+      return;
+    }
+    obs.pipe(
+      catchError((err: any) => {
+        console.error('[getDni] error dentro del stream', err);
+        return of([]); // fallback
+      })
+    ).subscribe((res: any) => {
       if (res.length == 0) {
         this.infoCliente;
       } else {
         this.infoCliente = res[0];
-        // al tener DNI, carga tags del cliente
+        // console.log('dni', dni);
+        // console.log('infoCliente', this.infoCliente);
         this.loadTagsCliente();
       }
-    },
-      err => { console.log(err); });
+    });
   }
 
   buscarCliente(dni: number) {
-    // ya estás bindendo dniCliente desde el input, lo usamos y cargamos tags
     this.getDataCliente(dni);
   }
 
   // ====== Catálogos ======
   getServicio() {
-    this.pedidoService.getServicios().subscribe((responde) => {
-      this.servicios = responde;
+    const obs: any = this.pedidoService.getServicios?.();
+    if (!obs || typeof obs.subscribe !== 'function') {
+      console.warn('[getServicios] devolvió undefined o no-Observable');
+      this.servicios = [];
+      return;
+    }
+    obs.pipe(
+      catchError((err: any) => {
+        console.error('[getServicios] error dentro del stream', err);
+        return of([]); // fallback
+      })
+    ).subscribe((responde: any) => {
+      this.servicios = responde ?? [];
     });
   }
 
@@ -243,8 +275,19 @@ export class AgregarPedidoComponent implements OnInit {
   }
 
   getEventos() {
-    this.pedidoService.getEventos().subscribe((responde) => {
-      this.evento = responde;
+    const obs: any = this.pedidoService.getEventos?.();
+    if (!obs || typeof obs.subscribe !== 'function') {
+      console.warn('[getEventos] devolvió undefined o no-Observable');
+      this.evento = [];
+      return;
+    }
+    obs.pipe(
+      catchError((err: any) => {
+        console.error('[getEventos] error dentro del stream', err);
+        return of([]); // fallback
+      })
+    ).subscribe((responde: any) => {
+      this.evento = responde ?? [];
     });
   }
 
@@ -253,23 +296,84 @@ export class AgregarPedidoComponent implements OnInit {
     this.getEventoxServicio();
   }
 
-  asignarDescripcion(id: number) {
-    this.desID = id;
-  }
-
   getEventoxServicio() {
-    this.visualizarService
-      .getEventosServicio(this.eventoSeleccionado, this.servicioSeleccionado).subscribe((res) => {
-        this.eventoxsevicio = res;
-        this.dataSource1 = new MatTableDataSource(res);
+    const obs: any = this.visualizarService?.getEventosServicio?.(this.eventoSeleccionado, this.servicioSeleccionado);
+    if (!obs || typeof obs.subscribe !== 'function') {
+      console.warn('[getEventosServicio] devolvió undefined o no-Observable');
+      this.dataSource1.data = [];
+      this.bindSorts();
+      return;
+    }
+    obs.pipe(
+      catchError((err: any) => {
+        console.error('[getEventosServicio] error dentro del stream', err);
+        return of([]); // fallback
+      })
+    ).subscribe((res: any) => {
+      this.dataSource1.data = res ?? [];
+      // console.log('dataSource1', this.dataSource1.data);
+      this.bindSorts();
+    });
+  }
+
+  // ====== Selección de paquetes ======
+  isInSeleccion(el: any, eventoKey: any = this.currentEventoKey): boolean {
+    const key = this.getPkgKey(el);
+    return this.selectedPaquetes.some(p => p.key === key && p.eventKey === eventoKey);
+  }
+
+  addPaquete(el: any, eventoKey: any = this.currentEventoKey) {
+    if (this.isInSeleccion(el, eventoKey)) {
+      swal.fire({
+        text: 'Ya seleccionaste este paquete para este evento.',
+        icon: 'info',
+        showCancelButton: false,
+        customClass: { confirmButton: 'btn btn-info' },
+        buttonsStyling: false
       });
+      return;
+    }
+    // console.log('addPaquete', { el, eventoKey });
+    this.selectedPaquetes.push({
+      key: this.getPkgKey(el),
+      eventKey: eventoKey ?? null,
+      ID: el.idEventoServicio,
+      descripcion: el.descripcion,
+      precio: el.precio,
+      notas: ''
+    });
   }
 
-  radioSelected() {
-    this.asignarDescripcion(this.selectedDescripcion);
+  removePaquete(key: any, eventoKey: any = this.currentEventoKey) {
+    this.selectedPaquetes = this.selectedPaquetes.filter(p => !(p.key === key && p.eventKey === eventoKey));
   }
 
-  // ====== Validación evento actual ======
+  get totalSeleccion(): number {
+    return this.selectedPaquetes.reduce((sum, p) => sum + (+p.precio || 0), 0);
+  }
+
+  // ====== Edición inline en tabla de ubicaciones ======
+  startEdit(row: any) {
+    row._backup = { ...row };
+    row.editing = true;
+  }
+
+  saveEdit(row: any) {
+    row.editing = false;
+    delete row._backup;
+    this.dataSource.data = this.ubicacion;
+    this.bindSorts();
+  }
+
+  cancelEdit(row: any) {
+    Object.assign(row, row._backup);
+    row.editing = false;
+    delete row._backup;
+    this.dataSource.data = this.ubicacion;
+    this.bindSorts();
+  }
+
+  // ====== Agregar / eliminar ubicaciones ======
   get canAgregarEvento(): boolean {
     const f = this.visualizarService.selectAgregarPedido.fechaEvent;
     const h = this.visualizarService.selectAgregarPedido.horaEvent;
@@ -278,7 +382,6 @@ export class AgregarPedidoComponent implements OnInit {
     return !!(f && h && u && dx);
   }
 
-  // ====== Agregar fila ======
   onQuickAdd() {
     if (!this.canAgregarEvento) return;
     this.addListUbicacion(
@@ -288,14 +391,12 @@ export class AgregarPedidoComponent implements OnInit {
       this.DireccionExacta,
       this.NotasEvento
     );
-    // limpiar campos de texto y dejar fecha/hora igual
     this.Direccion = '';
     this.DireccionExacta = '';
     this.NotasEvento = '';
   }
 
   addListUbicacion(direccion: string, fecha: string, hora: string, direccionExacta?: string, notas?: string) {
-    // Duplicados por (Fecha + Hora + Ubicación)
     const yaExiste = this.ubicacion.some(u =>
       u.Fecha === fecha &&
       u.Hora === hora &&
@@ -317,7 +418,6 @@ export class AgregarPedidoComponent implements OnInit {
       return item.ID != cualEliminar.ID && item.Direccion != cualEliminar.Direccion;
     });
 
-    // límite actual (8)
     if (this.ubicacion.length < 8) {
       const i = this.ubicacion.length ? Math.max(...this.ubicacion.map(u => u.ID)) + 1 : 1;
       this.ubicacion.push({
@@ -328,13 +428,13 @@ export class AgregarPedidoComponent implements OnInit {
         DireccionExacta: direccionExacta ?? '',
         Notas: notas ?? ''
       });
-      this.dataSource = new MatTableDataSource(this.ubicacion);
+      this.dataSource.data = this.ubicacion; // ✅ no recrear
+      this.bindSorts();
     } else {
       this.ubicacion;
     }
   }
 
-  // ====== Eliminar fila ======
   async deleteElement(p: any, c: any) {
     const fila = this.ubicacion.find(x => x.Hora == c && x.Direccion == p);
     const { isConfirmed } = await swal.fire({
@@ -357,38 +457,132 @@ export class AgregarPedidoComponent implements OnInit {
     const idx = this.ubicacion.findIndex(x => x.Hora == c && x.Direccion == p);
     if (idx >= 0) {
       this.ubicacion.splice(idx, 1);
-      this.dataSource = new MatTableDataSource(this.ubicacion);
+      this.dataSource.data = this.ubicacion; // ✅ no recrear
+      this.bindSorts();
     }
   }
+
   drop(event: CdkDragDrop<any[]>) {
     moveItemInArray(this.ubicacion, event.previousIndex, event.currentIndex);
-    this.dataSource = new MatTableDataSource(this.ubicacion); // renumera # automáticamente
+    // crea nueva referencia para que Angular detecte el cambio
+    this.ubicacion = [...this.ubicacion];
+    this.dataSource.data = this.ubicacion; // ✅ no recrear
+    this.bindSorts();
   }
-
 
   // ====== Enviar ======
   postPedido() {
-    let data = {
-      Nombre: this.visualizarService.selectAgregarPedido.NombrePedido,
-      ExS: this.desID,
-      doc: this.dniCliente?.toString(),
-      fechaCreate: this.convert(this.fechaCreate),
-      fechaEvent: this.visualizarService.selectAgregarPedido.fechaEvent,
-      horaEvent: this.visualizarService.selectAgregarPedido.horaEvent,
-      CodEmp: 1,
-      Direccion: this.ubicacion[0]?.Direccion,
-      Ubicacion: this.ubicacion[0]?.Direccion,
-      Latitud: null,
-      Longitud: null,
-      fechaEvent2: "2021-12-09T23:08:53.820Z",
-      horaEvent2: null,
-      Direccion2: null,
-      Ubicacion2: null,
-      Latitud2: null,
-      Longitud2: null,
-      Observacion: this.visualizarService.selectAgregarPedido.Observacion
+    if (!this.dniCliente) {
+      swal.fire({
+        text: 'Ingresa el DNI del cliente.',
+        icon: 'warning',
+        showCancelButton: false,
+        customClass: { confirmButton: 'btn btn-warning' },
+        buttonsStyling: false
+      });
+      return;
     }
-    this.visualizarService.postPedidos(data).subscribe(
+    // ====== Validaciones previas ======
+    const primera = this.ubicacion.find(u => (u?.Direccion || '').trim());
+    if (!primera) {
+      swal.fire({
+        text: 'Agrega al menos una ubicación válida antes de registrar.',
+        icon: 'warning',
+        showCancelButton: false,
+        customClass: { confirmButton: 'btn btn-warning' },
+        buttonsStyling: false
+      });
+      return;
+    }
+
+    if (!this.selectedPaquetes?.length) {
+      swal.fire({
+        text: 'Selecciona al menos un paquete/ítem antes de registrar.',
+        icon: 'warning',
+        showCancelButton: false,
+        customClass: { confirmButton: 'btn btn-warning' },
+        buttonsStyling: false
+      });
+      return;
+    }
+
+
+
+    // ====== Formatos canónicos ======
+    // fechaCreate: aseguramos YYYY-MM-DD (sin locale)
+    const fechaCreacion = this.convert(this.fechaCreate); // ya retorna YYYY-MM-DD
+
+    // Normalizador de hora: HH:mm -> HH:mm:ss
+    const toHms = (h: string | null | undefined) =>
+      (h || '').length === 5 ? `${h}:00` : (h || '');
+
+    // ====== Construcción del payload compuesto ======
+    const payload = {
+      pedido: {
+        clienteId: this.infoCliente.idCliente,
+        empleadoId: this.CodigoEmpleado ?? 1,
+        fechaCreacion: fechaCreacion,
+        observaciones: this.visualizarService.selectAgregarPedido?.Observacion || '',
+        // Define estos IDs iniciales en tu back; aquí puedes setearlos fijo o obtenerlos antes
+        estadoPedidoId: 1, // Ej: 1 = Pendiente
+        estadoPagoId: 1,   // Ej: 1 = Sin pago
+        nombrePedido: this.visualizarService.selectAgregarPedido?.NombrePedido || ''
+      },
+      eventos: (this.ubicacion || [])
+        .filter(u => (u?.Direccion || '').trim())
+        .map(u => ({
+          fecha: String(u.Fecha || '').trim(),            // YYYY-MM-DD
+          hora: toHms(String(u.Hora || '').trim()),       // HH:mm:ss
+          ubicacion: String(u.Direccion || '').trim(),    // nombre corto/lugar
+          direccion: String(u.DireccionExacta || '').trim(), // dirección exacta
+          notas: String(u.Notas || '').trim()
+        })),
+      items: (this.selectedPaquetes || []).map(it => ({
+        exsId: it.ID ?? null,                    // FK_ExS_Cod si proviene de catálogo
+        eventoCodigo: null,                      // Si luego asocias al evento, coloca el PK_PE_Cod
+        moneda: 'USD',                           // Cambia a 'USD' si corresponde
+        nombre: String(it.descripcion || '').trim(),
+        descripcion: String(it.descripcion || '').trim(),
+        precioUnit: Number(it.precio || 0),
+        cantidad: 1,
+        descuento: 0,
+        recargo: 0,
+        notas: String(it.notas || '').trim()
+      }))
+    };
+
+    // ====== Validaciones de coherencia (extra) ======
+    if (!payload.eventos.length) {
+      swal.fire({
+        text: 'Debes registrar al menos un evento (fecha, hora y ubicación).',
+        icon: 'warning',
+        showCancelButton: false,
+        customClass: { confirmButton: 'btn btn-warning' },
+        buttonsStyling: false
+      });
+      return;
+    }
+    const horaInvalida = payload.eventos.some(e => !/^\d{2}:\d{2}:\d{2}$/.test(e.hora));
+    const fechaInvalida = payload.eventos.some(e => !/^\d{4}-\d{2}-\d{2}$/.test(e.fecha));
+    if (horaInvalida || fechaInvalida) {
+      swal.fire({
+        text: 'Revisa el formato de fecha (YYYY-MM-DD) y hora (HH:mm:ss) en los eventos.',
+        icon: 'warning',
+        showCancelButton: false,
+        customClass: { confirmButton: 'btn btn-warning' },
+        buttonsStyling: false
+      });
+      return;
+    }
+
+    // ====== Logs para inspección ======
+    console.log('%c[POST PEDIDO] payload compuesto', 'color:#0b7285;font-weight:bold;');
+    console.log(JSON.stringify(payload, null, 2));
+    console.table(payload.eventos);
+    console.table(payload.items);
+
+    // ====== Envío ======
+    this.visualizarService.postPedidos(payload).subscribe(
       (res) => {
         swal.fire({
           text: 'Registro exitoso',
@@ -399,7 +593,7 @@ export class AgregarPedidoComponent implements OnInit {
         });
       },
       (err) => {
-        console.error(err)
+        console.error('[postPedidos] error', err);
         swal.fire({
           text: 'Ocurrió un error, volver a intentar.',
           icon: 'warning',
@@ -407,6 +601,8 @@ export class AgregarPedidoComponent implements OnInit {
           customClass: { confirmButton: 'btn btn-warning' },
           buttonsStyling: false
         });
-      });
+      }
+    );
   }
+
 }

@@ -22,9 +22,9 @@ export class DetallePedidoComponent implements OnInit {
     this.getDetallePedidoView(Number(this.ID));
   }
 
-  getDetallePedidoView(ID:Number) {
+  getDetallePedidoView(ID:number) {
     
-    this.visualizarService.getPedidoID(ID).subscribe(
+    this.visualizarService.getPedidoById(ID).subscribe(
       response =>{
         this.visualizarService.selectProyecto=response[0];
         console.log( this.visualizarService.selectProyecto);

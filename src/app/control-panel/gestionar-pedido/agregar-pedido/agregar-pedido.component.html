@@ -61,7 +61,6 @@
                 </div>
             </div>
 
-            <!-- ================== DATOS DEL EVENTO ================== -->
             <mat-card class="card">
                 <mat-card-header>
                     <mat-card-title>Datos del evento</mat-card-title>
@@ -79,9 +78,9 @@
                         <div class="col ms-auto">
                             <div class="form-group">
                                 <label class='col-form-label'>Fecha</label>
-                                <input type="date" class="form-control" min="{{minimo}}" max="{{maximo}}"
-                                    name="fechaEvent" [(ngModel)]="visualizarService.selectAgregarPedido.fechaEvent"
-                                    required>
+                                <!-- #3: usar bindings para min/max -->
+                                <input type="date" class="form-control" [min]="minimo" [max]="maximo" name="fechaEvent"
+                                    [(ngModel)]="visualizarService.selectAgregarPedido.fechaEvent" required>
                             </div>
                         </div>
                     </div>
@@ -99,10 +98,8 @@
                         </div>
                     </div>
 
-                    <!-- Tags dinámicos (pedido / cliente) -->
                     <div class="row mt-2" *ngIf="tagsPedido.length">
                         <div class="col">
-                            <!-- <span class="me-2">Tags (pedido):</span> -->
                             <span class="me-2">Tags:</span>
                             <ng-container *ngFor="let t of tagsPedido">
                                 <button type="button" class="btn btn-light btn-sm me-2" title="{{t.direccion}}"
@@ -115,21 +112,6 @@
                         </div>
                     </div>
 
-                    <!-- <div class="row mt-1" *ngIf="tagsCliente.length">
-                        <div class="col">
-                            <span class="me-2">Tags (cliente):</span>
-                            <ng-container *ngFor="let t of tagsCliente">
-                                <button type="button" class="btn btn-outline-secondary btn-sm me-2"
-                                    title="{{t.direccion}}" (click)="applyTag(t)">
-                                    {{ t.nombre }}
-                                </button>
-                                <button type="button" class="btn btn-link text-danger p-0 me-3" title="Eliminar tag"
-                                    (click)="removeTag(t,'cliente')">✖</button>
-                            </ng-container>
-                        </div>
-                    </div> -->
-
-                    <!-- Dirección exacta y Notas -->
                     <div class="row mt-2">
                         <div class="col ms-auto">
                             <div class="form-group">
@@ -147,19 +129,14 @@
                         </div>
                     </div>
 
-                    <!-- Guardar como tag -->
                     <div class="row mt-2">
                         <div class="col">
                             <button type="button" class="btn btn-outline-primary btn-sm me-2"
                                 [disabled]="!canGuardarTag" (click)="saveTag('pedido')">Guardar como tag
-                                </button>
-                            <!-- <button type="button" class="btn btn-outline-secondary btn-sm"
-                                [disabled]="!canGuardarTag || !dniCliente" (click)="saveTag('cliente')">Guardar como tag
-                                (cliente)</button> -->
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Agregar fila -->
                     <div class="row mt-2">
                         <div class="col text-end">
                             <button type="button" class="btn btn-danger" [disabled]="!canAgregarEvento"
@@ -168,8 +145,8 @@
                     </div>
 
                     <div class="row">
-                        <!-- <table mat-table [dataSource]="dataSource" matSort class="table"> -->
-                        <table mat-table [dataSource]="dataSource" matSort class="table" cdkDropList
+                        <!-- #1: referenciar sort de esta tabla -->
+                        <table mat-table [dataSource]="dataSource" matSort #sortUbic="matSort" class="table" cdkDropList
                             (cdkDropListDropped)="drop($event)">
                             <ng-container matColumnDef="Nro">
                                 <th mat-header-cell *matHeaderCellDef> # </th>
@@ -184,10 +161,6 @@
                                     <ng-container *ngIf="!element.editing; else fechaEdit">
                                         {{ element.Fecha }} ({{ weekdayPeru(element.Fecha) }})
                                     </ng-container>
-                                    <!-- <ng-template #fechaEdit>
-                                        <input type="date" class="form-control form-control-sm"
-                                            [(ngModel)]="element.Fecha" [ngModelOptions]="{standalone:true}">
-                                    </ng-template> -->
                                     <ng-template #fechaEdit>
                                         <input type="date" class="form-control form-control-sm"
                                             [(ngModel)]="element.Fecha" [ngModelOptions]="{standalone:true}" required>
@@ -202,10 +175,6 @@
                                     <ng-container *ngIf="!element.editing; else horaEdit">
                                         {{ element.Hora }}
                                     </ng-container>
-                                    <!-- <ng-template #horaEdit>
-                                        <input type="time" class="form-control form-control-sm"
-                                            [(ngModel)]="element.Hora" [ngModelOptions]="{standalone:true}">
-                                    </ng-template> -->
                                     <ng-template #horaEdit>
                                         <input type="time" class="form-control form-control-sm"
                                             [(ngModel)]="element.Hora" [ngModelOptions]="{standalone:true}" required>
@@ -220,10 +189,6 @@
                                     <ng-container *ngIf="!element.editing; else dirEdit">
                                         {{ element.Direccion }}
                                     </ng-container>
-                                    <!-- <ng-template #dirEdit>
-                                        <input type="text" class="form-control form-control-sm"
-                                            [(ngModel)]="element.Direccion" [ngModelOptions]="{standalone:true}">
-                                    </ng-template> -->
                                     <ng-template #dirEdit>
                                         <input type="text" class="form-control form-control-sm"
                                             [(ngModel)]="element.Direccion" [ngModelOptions]="{standalone:true}"
@@ -239,10 +204,6 @@
                                     <ng-container *ngIf="!element.editing; else dexEdit">
                                         {{ element.DireccionExacta }}
                                     </ng-container>
-                                    <!-- <ng-template #dexEdit>
-                                        <input type="text" class="form-control form-control-sm"
-                                            [(ngModel)]="element.DireccionExacta" [ngModelOptions]="{standalone:true}">
-                                    </ng-template> -->
                                     <ng-template #dexEdit>
                                         <input type="text" class="form-control form-control-sm"
                                             [(ngModel)]="element.DireccionExacta" [ngModelOptions]="{standalone:true}"
@@ -275,12 +236,6 @@
                                     <ng-container *ngIf="!element.editing; else accionesEdit">
                                         <button class="btn p-0" (click)="startEdit(element)">✏️ Editar</button>
                                     </ng-container>
-                                    <!-- <ng-template #accionesEdit>
-                                        <button class="btn p-0 me-2" (click)="saveEdit(element)">💾
-                                            Guardar</button>
-                                        <button class="btn text-danger p-0" (click)="cancelEdit(element)">✖
-                                            Cancelar</button>
-                                    </ng-template> -->
                                     <ng-template #accionesEdit>
                                         <button class="btn p-0 me-2" (click)="saveEdit(element)"
                                             [disabled]="rowInvalid(element)">💾 Guardar</button>
@@ -301,14 +256,12 @@
                             </ng-container>
 
                             <tr mat-header-row *matHeaderRowDef="columnsToDisplay"></tr>
-                            <!-- <tr mat-row *matRowDef="let row; columns: columnsToDisplay;"></tr> -->
                             <tr mat-row *matRowDef="let row; columns: columnsToDisplay;" cdkDrag></tr>
                         </table>
                     </div>
                 </mat-card-content>
             </mat-card>
 
-            <!-- ================== SERVICIOS / PAQUETES ================== -->
             <mat-card class="card">
                 <mat-card-header>
                     <mat-card-title>Datos del evento</mat-card-title>
@@ -318,9 +271,10 @@
                         <div class="col ms-auto">
                             <div class="form-group">
                                 <label class='col-form-label'>Servicio</label>
+                                <!-- #2: corregir atributo required -->
                                 <select type="text" class="form-control form-control-sm" name="servicio"
                                     [(ngModel)]="servicioSeleccionado" (ngModelChange)="asignarServicio($event)"
-                                    requiered>
+                                    required>
                                     <option *ngFor="let s of servicios" [value]="s.id">{{s.nombre}}</option>
                                 </select>
                             </div>
@@ -328,8 +282,9 @@
                         <div class="col ms-auto">
                             <div class="form-group">
                                 <label class='col-form-label'>Evento</label>
+                                <!-- #2: corregir atributo required -->
                                 <select type="text" class="form-control form-control-sm" name="evento"
-                                    [(ngModel)]="eventoSeleccionado" (ngModelChange)="asignarEvento($event)" requiered>
+                                    [(ngModel)]="eventoSeleccionado" (ngModelChange)="asignarEvento($event)" required>
                                     <option *ngFor="let e of evento" [value]="e.PK_E_Cod">{{e.E_Nombre}}</option>
                                 </select>
                             </div>
@@ -337,7 +292,9 @@
                     </div>
 
                     <div class="row">
-                        <table mat-table [dataSource]="dataSource1" matSort class="table">
+                        <!-- #1: referenciar sort de esta tabla -->
+                        <table mat-table [dataSource]="dataSource1" matSort #sortPaq="matSort" class="table">
+
                             <ng-container matColumnDef="Descripcion">
                                 <th mat-header-cell mat-sort-header *matHeaderCellDef> Descripcion </th>
                                 <td mat-cell *matCellDef="let element"> {{element.descripcion}} </td>
@@ -351,16 +308,63 @@
                             <ng-container matColumnDef="Seleccionar">
                                 <th mat-header-cell *matHeaderCellDef> Seleccionar </th>
                                 <td mat-cell *matCellDef="let element">
-                                    <mat-radio-group name="Descripcion" [(ngModel)]="selectedDescripcion"
-                                        (ngModelChange)="radioSelected()">
-                                        <mat-radio-button value={{element.ID}}></mat-radio-button>
-                                    </mat-radio-group>
+                                    <button type="button" class="btn btn-outline-primary btn-sm"
+                                        *ngIf="!isInSeleccion(element); else quitarBtn" (click)="addPaquete(element)">
+                                        Agregar
+                                    </button>
+                                    <ng-template #quitarBtn>
+                                        <button type="button" class="btn btn-outline-danger btn-sm"
+                                            (click)="removePaquete(pkgKey(element))">
+                                            Quitar
+                                        </button>
+                                    </ng-template>
                                 </td>
                             </ng-container>
-
                             <tr mat-header-row *matHeaderRowDef="columnsToDisplay1"></tr>
                             <tr mat-row *matRowDef="let row; columns: columnsToDisplay1;"></tr>
                         </table>
+                    </div>
+                    <div class="row mt-3" *ngIf="selectedPaquetes.length">
+                        <div class="col">
+                            <h6>Seleccionados ({{selectedPaquetes.length}})</h6>
+
+                            <table class="table table-sm align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Descripción</th>
+                                        <th class="text-end">Precio</th>
+                                        <th class="text-center">Cant.</th>
+                                        <th class="text-end">Subtotal</th>
+                                        <th style="width:28%">Notas</th>
+                                        <th class="text-center">Quitar</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let it of selectedPaquetes">
+                                        <td>{{ it.descripcion }}</td>
+                                        <td class="text-end">{{ it.precio | number:'1.2-2' }}</td>
+                                        <td class="text-center">1</td>
+                                        <td class="text-end">{{ it.precio | number:'1.2-2' }}</td>
+                                        <td>
+                                            <input type="text" class="form-control form-control-sm"
+                                                placeholder="Notas del ítem (opcional)" [(ngModel)]="it.notas"
+                                                [ngModelOptions]="{standalone:true}" maxlength="255">
+                                        </td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-link text-danger p-0" title="Quitar"
+                                                (click)="removePaquete(it.key)">✖</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="3" class="text-end">Total</th>
+                                        <th class="text-end">{{ totalSeleccion | number:'1.2-2' }}</th>
+                                        <th colspan="2"></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
                     </div>
 
                     <div class="form-group">
