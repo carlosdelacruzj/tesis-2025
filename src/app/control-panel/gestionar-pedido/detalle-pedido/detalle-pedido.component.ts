@@ -1,33 +1,226 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { MatTableDataSource } from '@angular/material/table';
-import { ActivatedRoute } from '@angular/router';
 import { PedidoService } from '../service/pedido.service';
 import { VisualizarService } from '../service/visualizar.service';
-
+import swal from 'sweetalert2';
+import { MatSort } from '@angular/material/sort';
+import { of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
   selector: 'app-detalle-pedido',
   templateUrl: './detalle-pedido.component.html',
   styleUrls: ['./detalle-pedido.component.css']
 })
-export class DetallePedidoComponent implements OnInit {
+export class DetallePedidoComponent implements OnInit, AfterViewInit {
+  // ====== Columnas (solo lectura) ======
+  columnsToDisplay = ['Nro', 'Fecha', 'Hora', 'Direccion', 'DireccionExacta', 'Notas']; // sin Editar/Quitar
+  columnsToDisplay1 = ['Descripcion', 'Precio']; // sin Seleccionar
+  // Campos “sólo lectura” para los inputs de cabecera de evento
+  Direccion: string = '';
+  DireccionExacta: string = '';
+  NotasEvento: string = '';
+  // ====== Catálogos (solo para mostrar combos deshabilitados) ======
+  servicios: any[] = [];
+  evento: any[] = [];
+  servicioSeleccionado = 1;
+  eventoSeleccionado = 1;
 
-  ID=this._route.snapshot.paramMap.get('id');
+  dataSource: MatTableDataSource<any> = new MatTableDataSource<any>([]);
+  dataSource1: MatTableDataSource<any> = new MatTableDataSource<any>([]);
 
-  constructor(public pedidoService: PedidoService,
-    public visualizarService: VisualizarService,private _route:ActivatedRoute) { }
+  @ViewChild('sortUbic') sortUbic!: MatSort;
+  @ViewChild('sortPaq') sortPaq!: MatSort;
 
-    
-  ngOnInit(): void {
-    this.getDetallePedidoView(Number(this.ID));
+  private bindSorts() {
+    if (this.sortUbic) this.dataSource.sort = this.sortUbic;
+    if (this.sortPaq) this.dataSource1.sort = this.sortPaq;
   }
 
-  getDetallePedidoView(ID:number) {
-    
-    this.visualizarService.getPedidoById(ID).subscribe(
-      response =>{
-        this.visualizarService.selectProyecto=response[0];
-        console.log( this.visualizarService.selectProyecto);
+  // ====== Estado general ======
+  CodigoEmpleado: number = 1;
+  infoCliente = { nombre: '-', apellido: '-', celular: '-', correo: '-', documento: '-', direccion: '-', idCliente: 0, idUsuario: 0 };
+  dniCliente: any;
+
+  // ====== Fechas visibles ======
+  fechaCreate: Date = new Date();
+  minimo = '';
+  maximo = '';
+
+  // ====== Ubicaciones ======
+  ubicacion: Array<{ ID: number; dbId: number; Direccion: string; Fecha: string; Hora: string; DireccionExacta: string; Notas: string; }> = [];
+
+  // ====== Paquetes seleccionados (solo para mostrar) ======
+  selectedPaquetes: Array<{
+    id?: number;
+    key: string | number;
+    eventKey: string | number | null;
+    ID?: number;
+    descripcion: string;
+    precio: number;
+    notas: string;
+  }> = [];
+
+  // ====== Pedido actual ======
+  private pedidoId!: number;
+
+  constructor(
+    public pedidoService: PedidoService,
+    public visualizarService: VisualizarService,
+    private route: ActivatedRoute,
+    private router: Router,
+  ) { }
+
+  // ====== Ciclo de vida ======
+  ngOnInit(): void {
+    this.pedidoId = +(this.route.snapshot.paramMap.get('id') || 0);
+    if (!this.pedidoId) {
+      swal.fire({
+        text: 'ID de pedido inválido.',
+        icon: 'error',
+        showCancelButton: false,
+        customClass: { confirmButton: 'btn btn-danger' },
+        buttonsStyling: false
+      });
+      this.router.navigate(['/home/gestionar-pedido']);
+      return;
+    }
+
+    // Opcional: cargar catálogos para combos deshabilitados
+    this.getServicio();
+    this.getEventos();
+    this.getEventoxServicio();
+
+    // Inicializa cabecera visible
+    this.visualizarService.selectAgregarPedido.fechaCreate = this.fechaCreate.toLocaleDateString();
+    this.fechaValidate(this.fechaCreate);
+
+    // Cargar el pedido existente (solo para ver)
+    this.loadPedido(this.pedidoId);
+  }
+
+  ngAfterViewInit(): void {
+    this.bindSorts();
+  }
+
+  // ====== Utiles fecha/hora ======
+  fechaValidate(date: Date) {
+    this.minimo = this.addDaysToDate(date, -365);
+    this.maximo = this.addDaysToDate(date, 365);
+  }
+
+  convert(strOrDate: string | Date) {
+    const date = new Date(strOrDate);
+    const mnth = ('0' + (date.getMonth() + 1)).slice(-2);
+    const day = ('0' + date.getDate()).slice(-2);
+    return [date.getFullYear(), mnth, day].join('-');
+  }
+
+  addDaysToDate(date: Date, days: number) {
+    const res = new Date(date);
+    res.setDate(res.getDate() + days);
+    return this.convert(res);
+  }
+
+  weekdayPeru(fechaISO: string): string {
+    if (!fechaISO) return '';
+    const [y, m, d] = fechaISO.split('-').map(Number);
+    const dtUTC = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+    const fmt = new Intl.DateTimeFormat('es-PE', { weekday: 'short', timeZone: 'America/Lima' });
+    return fmt.format(dtUTC);
+  }
+
+  // ====== Catálogos (solo carga) ======
+  getServicio() {
+    const obs: any = this.pedidoService.getServicios?.();
+    if (!obs || typeof obs.subscribe !== 'function') { this.servicios = []; return; }
+    obs.pipe(catchError(() => of([]))).subscribe((res: any) => { this.servicios = res ?? []; });
+  }
+
+  getEventos() {
+    const obs: any = this.pedidoService.getEventos?.();
+    if (!obs || typeof obs.subscribe !== 'function') { this.evento = []; return; }
+    obs.pipe(catchError(() => of([]))).subscribe((res: any) => { this.evento = res ?? []; });
+  }
+
+  getEventoxServicio() {
+    const obs: any = this.visualizarService?.getEventosServicio?.(this.eventoSeleccionado, this.servicioSeleccionado);
+    if (!obs || typeof obs.subscribe !== 'function') { this.dataSource1.data = []; this.bindSorts(); return; }
+    obs.pipe(catchError(() => of([]))).subscribe((res: any) => {
+      this.dataSource1.data = res ?? [];
+      this.bindSorts();
     });
+  }
+
+  // ====== Carga del pedido existente (solo mapeo) ======
+  private loadPedido(id: number) {
+    const obs: any = this.visualizarService.getPedidoById?.(id);
+    if (!obs || typeof obs.subscribe !== 'function') return;
+
+    obs.pipe(
+      catchError((err: any) => {
+        console.error('[getPedidoById] error', err);
+        swal.fire({
+          text: 'No se pudo cargar el pedido.',
+          icon: 'error',
+          showCancelButton: false,
+          customClass: { confirmButton: 'btn btn-danger' },
+          buttonsStyling: false
+        });
+        return of(null);
+      })
+    ).subscribe((data: any) => {
+      if (!data) return;
+
+      const cab = data.pedido || data;
+      this.visualizarService.selectAgregarPedido.NombrePedido = cab?.nombrePedido ?? cab?.nombre ?? '';
+      this.visualizarService.selectAgregarPedido.Observacion = cab?.observaciones ?? '';
+      this.CodigoEmpleado = cab?.empleadoId ?? this.CodigoEmpleado;
+      this.fechaCreate = new Date(cab?.fechaCreacion ?? new Date());
+      this.visualizarService.selectAgregarPedido.fechaCreate = this.fechaCreate.toLocaleDateString();
+
+      // Cliente
+      this.infoCliente = {
+        nombre: cab?.cliente?.nombres ?? '-',
+        apellido: cab?.cliente?.apellidos ?? '-',
+        celular: cab?.cliente?.celular ?? '-',
+        correo: cab?.cliente?.correo ?? '-',
+        documento: cab?.cliente?.documento ?? '-',
+        direccion: cab?.cliente?.direccion ?? '-',
+        idCliente: cab?.clienteId ?? cab?.cliente?.id ?? 0,
+        idUsuario: 0
+      };
+      this.dniCliente = this.infoCliente.documento || '';
+
+      // Eventos
+      this.ubicacion = (data.eventos || []).map((e: any, idx: number) => ({
+        ID: idx + 1,
+        dbId: e.id ?? e.dbId ?? 0,
+        Direccion: e.ubicacion ?? '',
+        Fecha: String(e.fecha).slice(0, 10),
+        Hora: String(e.hora).slice(0, 5),
+        DireccionExacta: e.direccion ?? '',
+        Notas: e.notas ?? ''
+      }));
+      this.dataSource.data = this.ubicacion;
+      this.bindSorts();
+
+      // Items/paquetes seleccionados (para mostrar tabla resumen)
+      this.selectedPaquetes = (data.items || []).map((it: any) => ({
+        id: it.id,
+        key: it.exsId ?? it.id ?? `${it.nombre ?? it.descripcion}|${it.precioUnit ?? it.precio ?? 0}`,
+        eventKey: it.eventoCodigo ?? null,
+        ID: it.exsId ?? it.id ?? null,
+        descripcion: it.nombre ?? it.descripcion ?? '',
+        precio: Number(it.precioUnit ?? it.precio ?? 0),
+        notas: it.notas ?? ''
+      }));
+    });
+  }
+
+  // ====== Helpers de plantilla (solo lectura) ======
+  get totalSeleccion(): number {
+    return this.selectedPaquetes.reduce((sum, p) => sum + (+p.precio || 0), 0);
   }
 }
