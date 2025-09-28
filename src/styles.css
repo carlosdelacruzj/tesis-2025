@@ -13,3 +13,22 @@ span.mat-radio-inner-circle {
 span.mat-radio-outer-circle{
     border-color:#304a6e !important;
 }
+
+
+/* Quita padding y fondo por defecto del surface y fuerza a que el panel sea caja negra sin recortes */
+.image-viewer-dialog-panel .mat-mdc-dialog-container,
+.image-viewer-dialog-panel .mdc-dialog__surface {
+  padding: 0 !important;
+  background: #000 !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
+
+/* Evita límites de alto en wrappers internos por si Material los añade */
+.image-viewer-dialog-panel .mat-mdc-dialog-title,
+.image-viewer-dialog-panel .mat-mdc-dialog-content,
+.image-viewer-dialog-panel .mat-mdc-dialog-actions {
+  padding: 0 !important;
+  margin: 0 !important;
+  max-height: none !important;
+}

@@ -1,66 +1,96 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
+import { environment } from 'src/environments/environment';
+import { MetodoPago } from '../model/metodopago.model';
 
-@Injectable({
-  providedIn: 'root',
-})
+export interface PedidoLite {
+  IdPed: number;
+  Nombre: string;
+  Fecha: string; // ISO
+}
+export interface ResumenPago {
+  CostoTotal: number;
+  MontoAbonado: number;
+  SaldoPendiente: number;
+}
+
+export interface VoucherVM {
+  Codigo: number | string;
+  Fecha: string;
+  Monto: number;
+  MetodoPago: string;
+  Link: string;
+}
+
+@Injectable({ providedIn: 'root' })
 export class RegistrarPagoService {
-  private GET_PEDIDOS_PENDIENTES =
-    'https://tp2021database.herokuapp.com/voucher/consulta/getAllPedidoVoucher/1';
-  private GET_PEDIDOS_CONTRATADOS =
-    'https://tp2021database.herokuapp.com/voucher/consulta/getAllPedidoVoucher/2';
-  private GET_PEDIDOS_PAGADOS =
-    'https://tp2021database.herokuapp.com/voucher/consulta/getAllPedidoVoucher/3';
-  private GET_VOUCHER_PEDIDO =
-    'https://tp2021database.herokuapp.com/voucher/consulta/getVoucherByPedido/';
-  private GET_VOUCHERS =
-    'https://tp2021database.herokuapp.com/voucher/consulta/getAllVoucherByPedido/';
-  private GET_METODOS =
-    'https://tp2021database.herokuapp.com/voucher/consulta/getAllMetodoPago';
+  private readonly API = environment.baseUrl;
 
-  private POST_PAGO = 'https://tp2021database.herokuapp.com/postVoucher';
+  constructor(private http: HttpClient) { }
 
-  constructor(private http: HttpClient) {}
-
-  public getPedidosContratados(): Observable<any> {
-    return this.http.get(this.GET_PEDIDOS_CONTRATADOS);
+  // === Tabs por estado de pago ===
+  getPedidosPendientes(): Observable<PedidoLite[]> {
+    return this.http.get<PedidoLite[]>(`${this.API}/pagos/pendientes`);
   }
-  public getPedidosPendientes(): Observable<any> {
-    return this.http.get(this.GET_PEDIDOS_PENDIENTES);
+  getPedidosParciales(): Observable<PedidoLite[]> {
+    return this.http.get<PedidoLite[]>(`${this.API}/pagos/parciales`);
+  }
+  getPedidosPagados(): Observable<PedidoLite[]> {
+    return this.http.get<PedidoLite[]>(`${this.API}/pagos/pagados`);
   }
 
-  public getPedidosPagados(): Observable<any> {
-    return this.http.get(this.GET_PEDIDOS_PAGADOS);
+  // === Resumen y vouchers del pedido ===
+  getResumenPedido(id: number): Observable<ResumenPago> {
+    return this.http.get<ResumenPago>(`${this.API}/pagos/resumen/${id}`);
+  }
+  // registrar-pago.service.ts
+  getVouchersPedido(id: number): Observable<VoucherVM[]> {
+    return this.http.get<VoucherVM[]>(`${this.API}/pagos/vouchers/${id}`).pipe(
+      // añade la URL directa de la imagen
+      map(vs => vs.map(v => ({
+        ...v,
+        Link: `${this.API}/pagos/${v.Codigo}/imagen`
+      })))
+    );
   }
 
-  public getVoucherPedido(id: number): Observable<any> {
-    return this.http.get(this.GET_VOUCHER_PEDIDO + `${id}`);
+  getVoucherImageBlob(idVoucher: number) {
+    return this.http.get(`${this.API}/pagos/${idVoucher}/imagen`, {
+      responseType: 'blob'
+    });
   }
 
-  public getVouchersPedido(id: number): Observable<any> {
-    return this.http.get(this.GET_VOUCHERS + `${id}`);
+  // === Métodos de pago ===
+  getMetodosPago(): Observable<MetodoPago[]> {
+    return this.http.get<MetodoPago[]>(`${this.API}/pagos/metodos`);
   }
 
-  public getMetodosPago(): Observable<any> {
-    return this.http.get(this.GET_METODOS);
-  }
-
-  public postPago(
-    selectedFile: any,
-    monto: string,
-    fechaRegistro: string,
-    idPedido: string,
-    estadoVoucher: string,
-    metodoPago: string
-  ) {
+  // === Registrar pago (multipart) ===
+  postPago(params: {
+    file?: File;
+    monto: number;
+    pedidoId: number;
+    metodoPagoId: number;
+    estadoVoucherId?: number; // default 2 = Aprobado
+    fecha?: string;
+  }): Promise<any> {
     const fd = new FormData();
-    fd.append('file', selectedFile, selectedFile.name);
-    fd.append('monto', monto);
-    fd.append('fechaRegistro', fechaRegistro);
-    fd.append('idPedido', idPedido);
-    fd.append('estadoVoucher', estadoVoucher);
-    fd.append('metodoPago', metodoPago);
-    return this.http.post(this.POST_PAGO, fd).toPromise();
+
+    // ⬇️ Adjunta file SOLO si viene
+    if (params.file) {
+      fd.append('file', params.file, params.file.name);
+    }
+
+    fd.append('monto', String(params.monto));
+    fd.append('pedidoId', String(params.pedidoId));
+    fd.append('metodoPagoId', String(params.metodoPagoId));
+    if (params.estadoVoucherId != null) fd.append('estadoVoucherId', String(params.estadoVoucherId));
+    if (params.fecha) fd.append('fecha', params.fecha);
+
+    // Importante: NO seteas Content-Type; deja que el browser ponga el boundary del multipart
+    return this.http.post(`${this.API}/pagos`, fd).toPromise();
   }
+
+
 }
